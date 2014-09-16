@@ -1,10 +1,10 @@
 #!/bin/bash
-# Backup all Zpanel accounts / replacing the php hook function
-# Should be run in cron job daily when server not having a lot of 
-# load and with lower priority
-# will generate one file per data prefixed with db_+name + time stamp
-# and a html_ file that contain all public_html folder
-# will also clear ALL backup older than clearday var
+# Backup all Zpanel accounts / replacing the php hook function.
+# Should be run in cron job daily when server not under load 
+# with lower priority. Will generate one file per database 
+# prefixed with db_+name + time stamp and a html_ file that 
+# contain all public_html folder then also clear ALL backup 
+# older than clearday var.
 panelroot="/var/zpanel/hostdata"
 date=$(date +"%d-%b-%Y_%H_%M")
 clearday=45 #delete backups older than XX days apply to all zip files
@@ -40,8 +40,7 @@ function_backup_html() {
 } 
 function_backup_clear() {
 	# Delete files older than 45 days
-	find $1/$2_db_*.zip -mtime +$clearday -exec rm -f {} \;
-	find $1/$2_html_*.zip -mtime +$clearday -exec rm -f {} \;
+	find $1/$2_*.zip -mtime +$clearday -exec rm -f {} \;
 	echo "Removing old backups in $1 user $2" 
 } 
 
