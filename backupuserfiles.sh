@@ -39,8 +39,7 @@ function_backup_html() {
    zip -r $panelroot/$1/backups/$1_html_$1_$date.zip $panelroot/$1/public_html/*
 } 
 function_backup_clear() {
-# Delete files older than 45 days
-# ROUTINE DISABLED CURRENTLY
+# Delete files older than xx days
 find $1/*db_*.zip -mtime +$clearday -exec rm -f {} \;
 find $1/*html_*.zip -mtime +$clearday -exec rm -f {} \;
 echo "Removing old backups in " $1
