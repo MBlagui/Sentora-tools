@@ -39,10 +39,10 @@ function_backup_html() {
    zip -r $panelroot/$1/backups/$1_html_$1_$date.zip $panelroot/$1/public_html/*
 } 
 function_backup_clear() {
-# Delete files older than xx days
-find $1/*db_*.zip -mtime +$clearday -exec rm -f {} \;
-find $1/*html_*.zip -mtime +$clearday -exec rm -f {} \;
-echo "Removing old backups in " $1
+# Delete files older than 45 days
+find $1/$2_db_*.zip -mtime +$clearday -exec rm -f {} \;
+find $1/$2_html_*.zip -mtime +$clearday -exec rm -f {} \;
+echo "Removing old backups in $1 user $2" 
 } 
 
 # Function backup DB get list of DB then call DB dump
@@ -67,7 +67,7 @@ if [ ! "$ac_user_path" == "ac_user_path" ]; then
 echo "Path: $ac_user_path user to backup"
 function_backup_html $ac_user_vc > $logfile
 function_backup_db $ac_id_pk $ac_user_path > $logfile
-function_backup_clear "$ac_user_path/backups" > $logfile
+function_backup_clear "$ac_user_path/backups" $ac_user_vc > $logfile
 fi
 done
 echo "Finished backup $(date +"%d-%b-%Y %H:%M")"> $logfile
