@@ -483,6 +483,8 @@ chkconfig crond on
 chkconfig $dbserver on
 chkconfig named on
 chkconfig proftpd on
+
+php -q $panelpath/panel/bin/daemon.php
 service httpd start
 service postfix restart
 service dovecot start
@@ -491,7 +493,6 @@ service $dbserver restart
 service named start
 service proftpd start
 service atd start
-php $panelpath/panel/bin/daemon.php
 # restart all service
 service httpd restart
 service postfix restart
