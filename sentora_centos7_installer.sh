@@ -7,7 +7,7 @@ SEN_VERSION=master
 Panelpath="/etc/zpanel"
 paneldata="/var/zpanel"
 dbserver="mariadb"
-firewallservice ="iptables"
+firewallservice="iptables"
 
 # Official Sentora Automated Installation Script
 # =============================================
@@ -64,9 +64,9 @@ else
   VER=$(uname -r);
 fi
 echo "Detected : $OS  $VER  $BITS"
-if [ $VER = "7" ]; then
+if [ "$VER" = "7" ]; then
  dbserver="mariadb" &&  echo "DB server will be mariaDB"
- firewallservice ="firewalld"
+ firewallservice="firewalld"
  wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-1.noarch.rpm
  yum -y install epel-release-7-1.noarch.rpm
  else 
@@ -126,8 +126,8 @@ done
 yum -y -q install tzdata wget &>/dev/null
 
 # Set some installation defaults/auto assignments
-fqdn=`/bin/hostname`
-publicip=`wget -qO- http://api.sentora.org/ip.txt`
+fqdn=$(`/bin/hostname`)
+publicip=$(`wget -qO- http://api.sentora.org/ip.txt`)
 
 echo "echo \$TZ > /etc/timezone" >> /usr/bin/tzselect
 
@@ -135,12 +135,12 @@ echo "echo \$TZ > /etc/timezone" >> /usr/bin/tzselect
 while true; do
 	echo -e "Find your timezone from : http://php.net/manual/en/timezones.php e.g Europe/London"
 	tzselect
-	tz=`cat /etc/timezone`
+	tz=$(`cat /etc/timezone`)
 	echo -e "Enter the FQDN you will use to access Sentora on your server."
 	echo -e "- It MUST be a sub-domain of you main domain, it MUST NOT be your main domain only. Example: panel.yourdomain.com"
 	echo -e "- Remember that the sub-domain ('panel' in the example) MUST be setup in your DNS nameserver."
-	read -e -p "FQDN for zpanel: " -i $fqdn fqdn
-	read -e -p "Enter the public (external) server IP: " -i $publicip publicip
+	read -e -p "FQDN for zpanel: " -i "$fqdn" fqdn
+	read -e -p "Enter the public (external) server IP: " -i "$publicip" publicip
 	read -e -p "Sentora is now ready to install, do you wish to continue (y/n)" yn
 	case $yn in
 		[Yy]* ) break;;
@@ -483,8 +483,6 @@ chkconfig crond on
 chkconfig $dbserver on
 chkconfig named on
 chkconfig proftpd on
-
-php -q $panelpath/panel/bin/daemon.php
 service httpd start
 service postfix restart
 service dovecot start
@@ -493,6 +491,7 @@ service $dbserver restart
 service named start
 service proftpd start
 service atd start
+php -q $panelpath/panel/bin/daemon.php
 # restart all service
 service httpd restart
 service postfix restart
