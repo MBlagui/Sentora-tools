@@ -90,11 +90,7 @@ echo "- It MUST be already setup in your DNS nameserver (and propagated)."
 fqdn=`/bin/hostname`
 
     read -e -p "FQDN for Sentora: " -i $fqdn fqdn
-    sub=$(echo $fqdn | sed -n 's|\(.*\)\..*\..*|\1|p')
-    if [[ "$sub" == "" ]]; then
-        echo "The FQDN must be a subdomain."
-    fi
-
+    
 echo ""
 while true; do
     read -e -p "Sentora is now ready to install, do you wish to continue (y/n)" yn
