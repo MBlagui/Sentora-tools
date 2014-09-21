@@ -88,13 +88,13 @@ echo "You will be asked for the FQDN that will be used to access Sentora on your
 echo "- It MUST be a sub-domain of you main domain, it must NOT be your main domain only. Example: panel.yourdomain.com"
 echo "- It MUST be already setup in your DNS nameserver (and propagated)."
 fqdn=`/bin/hostname`
-while true; do
+
     read -e -p "FQDN for Sentora: " -i $fqdn fqdn
     sub=$(echo $fqdn | sed -n 's|\(.*\)\..*\..*|\1|p')
     if [[ "$sub" == "" ]]; then
         echo "The FQDN must be a subdomain."
     fi
-done
+
 echo ""
 while true; do
     read -e -p "Sentora is now ready to install, do you wish to continue (y/n)" yn
