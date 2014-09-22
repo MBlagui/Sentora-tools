@@ -232,9 +232,9 @@ done
 sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
 setenforce 0
 
-# Stop conflicting services and iptables to ensure all services will work
+# Stop conflicting services
 service sendmail stop
-service "$FIREWALL_SERVICE" save # replaced iptables with firewallD
+service "$FIREWALL_SERVICE" save
 service "$FIREWALL_SERVICE" stop
 chkconfig sendmail off
 chkconfig "$FIREWALL_SERVICE" off
