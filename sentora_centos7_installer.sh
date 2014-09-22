@@ -135,7 +135,7 @@ $PACKAGE_INSTALLER -y -q install tzdata wget &>/dev/null
 
 # Set some installation defaults/auto assignments
 fqdn=$(`/bin/hostname`)
-publicip=$(`wget -qO- http://api.sentora.org/ip.txt`)
+publicip=$(wget http://api.sentora.org/ip.txt -q -O -)
 
 echo "echo \$TZ > /etc/timezone" >> /usr/bin/tzselect
 
