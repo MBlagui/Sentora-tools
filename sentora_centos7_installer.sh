@@ -3,11 +3,16 @@
 # OS VERSION: CentOS 6.4+ Minimal
 # ARCH: 32bit + 64bit
 
-SEN_VERSION=master
-Panelpath="/etc/zpanel"
-paneldata="/var/zpanel"
-dbserver="mariadb"
-firewallservice="iptables"
+SEN_VERSION="master"
+PANEL_PATH="/etc/zpanel"
+PANEL_DATA="/var/zpanel"
+DB_SERVER="mariadb"
+HTTP_SERVER="httpd"
+FIREWALL_SERVICE="iptables"
+HTTP_USER="apache"
+PHP_BIN_PATH="php"
+PANEL_DAEMON_PATH="$PANEL_PATH/panel/bin/daemon.php"
+PACKAGE_INSTALLER="yum"
 
 # Official Sentora Automated Installation Script
 # =============================================
@@ -41,7 +46,7 @@ if [ -e /usr/local/cpanel ] || [ -e /usr/local/directadmin ] || [ -e /usr/local/
     exit
 fi
 
-if rpm -q php httpd $dbserver bind postfix dovecot; 
+if rpm -q php $HTTP_SERVER $DB_SERVER bind postfix dovecot; 
 then
     echo "You appear to have a server with apache/mysql/bind/postfix already installed; "
     echo "This installer is designed to install and configure Sentora on a clean OS "
@@ -65,12 +70,12 @@ else
 fi
 echo "Detected : $OS  $VER  $BITS"
 if [ "$VER" = "7" ]; then
- dbserver="mariadb" &&  echo "DB server will be mariaDB"
+ DB_SERVER="mariadb" &&  echo "DB server will be mariaDB"
  firewallservice="firewalld"
  wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-1.noarch.rpm
- yum -y install epel-release-7-1.noarch.rpm
+ $PACKAGE_INSTALLER -y install epel-release-7-1.noarch.rpm
  else 
- dbserver="mysql" && echo "DB server will be mySQL"
+ DB_SERVER="mysql" && echo "DB server will be mySQL"
 fi
 #warning the last version of centos and 6.x
 if [[ "$OS" = "CentOs" ]] && ( [[ "$VER" = "6" ]] || [[ "$VER" = "7" ]] ) ; then 
@@ -123,7 +128,7 @@ read -e -p "Would you like to continue (y/n)? " yn
 done
 
 # Install package to allow auto selection of php timezone and public ip
-yum -y -q install tzdata wget &>/dev/null
+$PACKAGE_INSTALLER -y -q install tzdata wget &>/dev/null
 
 # Set some installation defaults/auto assignments
 fqdn=$(`/bin/hostname`)
@@ -139,7 +144,7 @@ while true; do
 	echo -e "Enter the FQDN you will use to access Sentora on your server."
 	echo -e "- It MUST be a sub-domain of you main domain, it MUST NOT be your main domain only. Example: panel.yourdomain.com"
 	echo -e "- Remember that the sub-domain ('panel' in the example) MUST be setup in your DNS nameserver."
-	read -e -p "FQDN for Sentora - i.e. sub-domain.sentora.installation: " -i "$fqdn" fqdn
+	read -e -p "FQDN for Sentora: " -i "$fqdn" fqdn
 	read -e -p "Enter the public (external) server IP: " -i "$publicip" publicip
 	read -e -p "Sentora is now ready to install, do you wish to continue (y/n)" yn
 	case $yn in
@@ -224,10 +229,10 @@ echo -e ""
 rpm -qa
 
 # Removal of conflicting packages prior to Sentora installation.
-yum -y remove bind-chroot qpid-cpp-client
+$PACKAGE_INSTALLER -y remove bind-chroot qpid-cpp-client
 
 # Install some standard utility packages required by the installer and/or Sentora.
-yum -y install sudo wget vim make zip unzip git chkconfig
+$PACKAGE_INSTALLER -y install sudo wget vim make zip unzip git chkconfig
 
 # Cloning Sentora from GitHub
 echo "Downloading Sentora, Please wait, this may take several minutes, the installer will continue after this is complete!"
@@ -247,22 +252,22 @@ cd ../zp_install_cache/
 # cp etc/build/config_packs/centos_6/yum.repos.d/epel.repo /etc/yum.repos.d/epel.repo
 
 # We now update the server software packages.
-yum -y update && yum -y upgrade
+$PACKAGE_INSTALLER -y update && $PACKAGE_INSTALLER -y upgrade
 
 # Install required software and dependencies required by Sentora.
 # don't work as for php-suhosin
 # yum -y install ld-linux.so.2 libbz2.so.1 libdb-4.7.so libgd.so.2 httpd php php-suhosin php-devel php-gd php-mbstring php-mcrypt php-intl php-imap php-mysql php-xml php-xmlrpc curl curl-devel perl-libwww-perl libxml2 libxml2-devel mysql-server zip webalizer gcc gcc-c++ httpd-devel at make mysql-devel bzip2-devel postfix postfix-perl-scripts bash-completion dovecot dovecot-mysql dovecot-pigeonhole mysql-server proftpd proftpd-mysql bind bind-utils bind-libs
-yum -y install ld-linux.so.2 libbz2.so.1 libdb-4.7.so libgd.so.2 bash-completion
-yum -y install curl curl-devel perl-libwww-perl libxml2 libxml2-devel zip bzip2-devel gcc gcc-c++ at make bash-completion
-yum -y install httpd httpd-devel 
-yum -y install php  php-devel php-gd php-mbstring php-intl  php-mysql php-xml php-xmlrpc
-yum -y install php-mcrypt php-imap  #Epel packages
-yum -y install postfix postfix-perl-scripts && yum -y install dovecot dovecot-mysql dovecot-pigeonhole 
-yum -y install proftpd proftpd-mysql 
-yum -y install bind bind-utils bind-libs
-yum -y install "$dbserver" "$dbserver-devel"
-yum -y install "$dbserver-server"
-yum -y install webalizer
+$PACKAGE_INSTALLER -y install ld-linux.so.2 libbz2.so.1 libdb-4.7.so libgd.so.2 bash-completion
+$PACKAGE_INSTALLER -y install curl curl-devel perl-libwww-perl libxml2 libxml2-devel zip bzip2-devel gcc gcc-c++ at make bash-completion
+$PACKAGE_INSTALLER -y install $HTTP_SERVER $HTTP_SERVER-devel 
+$PACKAGE_INSTALLER -y install php  php-devel php-gd php-mbstring php-intl  php-mysql php-xml php-xmlrpc
+$PACKAGE_INSTALLER -y install php-mcrypt php-imap  #Epel packages
+$PACKAGE_INSTALLER -y install postfix postfix-perl-scripts && $PACKAGE_INSTALLER -y install dovecot dovecot-mysql dovecot-pigeonhole 
+$PACKAGE_INSTALLER -y install proftpd proftpd-mysql 
+$PACKAGE_INSTALLER -y install bind bind-utils bind-libs
+$PACKAGE_INSTALLER -y install "$DB_SERVER" "$DB_SERVER-devel"
+$PACKAGE_INSTALLER -y install "$DB_SERVER-server"
+$PACKAGE_INSTALLER -y install webalizer
 
 # Build suhosin for PHP 5.4 which is required by Sentora. // to be replaced with function
 echo -e "\n# Building suhosin for php5.4"
@@ -278,69 +283,71 @@ echo 'extension=suhosin.so' > /etc/php.d/suhosin.ini
 
 
 # Generation of random passwords
+#add proftp password
 password=`passwordgen`;
+proftppassword=`passwordgen`;
 postfixpassword=`passwordgen`;
 zadminNewPass=`passwordgen`;
 phpmyadminsecret=`passwordgen`;
 roundcube_des_key=`passwordgen 24`;
 
 # Set-up Sentora directories and configure directory permissions as required.
-mkdir $Panelpath
-mkdir $Panelpath/configs
-mkdir $Panelpath/panel
-mkdir $Panelpath/docs
-mkdir $paneldata
-mkdir $paneldata/hostdata
-mkdir $paneldata/hostdata/zadmin
-mkdir $paneldata/hostdata/zadmin/public_html
-mkdir $paneldata/logs
-mkdir $paneldata/logs/proftpd
-mkdir $paneldata/backups
-mkdir $paneldata/temp
-cp -R . $Panelpath/panel/
-chmod -R 777 $Panelpath/
-chmod -R 777 $paneldata/
-chmod -R 770 $paneldata/hostdata/
-chown -R apache:apache $paneldata/hostdata/
-ln -s $Panelpath/panel/bin/zppy /usr/bin/zppy
-ln -s $Panelpath/panel/bin/setso /usr/bin/setso
-ln -s $Panelpath/panel/bin/setzadmin /usr/bin/setzadmin
-chmod +x $Panelpath/panel/bin/zppy
-chmod +x $Panelpath/panel/bin/setso
-cp -R $Panelpath/panel/etc/build/config_packs/centos_6/. $Panelpath/configs/
+mkdir $PANEL_PATH
+mkdir $PANEL_PATH/configs
+mkdir $PANEL_PATH/panel
+mkdir $PANEL_PATH/docs
+mkdir $PANEL_DATA
+mkdir $PANEL_DATA/hostdata
+mkdir $PANEL_DATA/hostdata/zadmin
+mkdir $PANEL_DATA/hostdata/zadmin/public_html
+mkdir $PANEL_DATA/logs
+mkdir $PANEL_DATA/logs/proftpd
+mkdir $PANEL_DATA/backups
+mkdir $PANEL_DATA/temp
+cp -R . $PANEL_PATH/panel/
+chmod -R 777 $PANEL_PATH/
+chmod -R 777 $PANEL_DATA/
+chmod -R 770 $PANEL_DATA/hostdata/
+chown -R $HTTP_USER:$HTTP_USER $PANEL_DATA/hostdata/
+ln -s $PANEL_PATH/panel/bin/zppy /usr/bin/zppy
+ln -s $PANEL_PATH/panel/bin/setso /usr/bin/setso
+ln -s $PANEL_PATH/panel/bin/setzadmin /usr/bin/setzadmin
+chmod +x $PANEL_PATH/panel/bin/zppy
+chmod +x $PANEL_PATH/panel/bin/setso
+cp -R $PANEL_PATH/panel/etc/build/config_packs/centos_6/. $PANEL_PATH/configs/
 # set password after test connexion
-cc -o $Panelpath/panel/bin/zsudo $Panelpath/configs/bin/zsudo.c
-sudo chown root $Panelpath/panel/bin/zsudo
-chmod +s $Panelpath/panel/bin/zsudo
+cc -o $PANEL_PATH/panel/bin/zsudo $PANEL_PATH/configs/bin/zsudo.c
+sudo chown root $PANEL_PATH/panel/bin/zsudo
+chmod +s $PANEL_PATH/panel/bin/zsudo
 
 # phpMyAdmin specific installation tasks...
-chmod 644 $Panelpath/configs/phpmyadmin/config.inc.php
-sed -i "s|\$cfg\['blowfish_secret'\] \= 'SENTORA';|\$cfg\['blowfish_secret'\] \= '$phpmyadminsecret';|" $Panelpath/configs/phpmyadmin/config.inc.php
-ln -s $Panelpath/configs/phpmyadmin/config.inc.php $Panelpath/panel/etc/apps/phpmyadmin/config.inc.php
+chmod 644 $PANEL_PATH/configs/phpmyadmin/config.inc.php
+sed -i "s|\$cfg\['blowfish_secret'\] \= 'SENTORA';|\$cfg\['blowfish_secret'\] \= '$phpmyadminsecret';|" $PANEL_PATH/configs/phpmyadmin/config.inc.php
+ln -s $PANEL_PATH/configs/phpmyadmin/config.inc.php $PANEL_PATH/panel/etc/apps/phpmyadmin/config.inc.php
 # Remove phpMyAdmin's setup folder in case it was left behind
-rm -rf $Panelpath/panel/etc/apps/phpmyadmin/setup
+rm -rf $PANEL_PATH/panel/etc/apps/phpmyadmin/setup
 
 # MySQL specific installation tasks...
-service $dbserver start 
+service $DB_SERVER start 
 mysqladmin -u root password "$password"
 until mysql -u root -p$password -e ";" > /dev/null 2>&1 ; do
-read -s -p "enter your root $dbserver password : " password
+read -s -p "enter your root $DB_SERVER password : " password
 done
-sed -i "s|YOUR_ROOT_MYSQL_PASSWORD|$password|" $Panelpath/panel/cnf/db.php
+sed -i "s|YOUR_ROOT_MYSQL_PASSWORD|$password|" $PANEL_PATH/panel/cnf/db.php
 mysql -u root -p$password -e "DELETE FROM mysql.user WHERE User='root' AND Host != 'localhost'";
 mysql -u root -p$password -e "DELETE FROM mysql.user WHERE User=''";
 mysql -u root -p$password -e "DROP DATABASE test";
 mysql -u root -p$password -e "CREATE SCHEMA zpanel_roundcube";
-cat $Panelpath/configs/sentora-install/sql/*.sql | mysql -u root -p$password
+cat $PANEL_PATH/configs/sentora-install/sql/*.sql | mysql -u root -p$password
 mysql -u root -p$password -e "UPDATE mysql.user SET Password=PASSWORD('$postfixpassword') WHERE User='postfix' AND Host='localhost';";
 mysql -u root -p$password -e "FLUSH PRIVILEGES";
 sed -i "/symbolic-links=/a \secure-file-priv=/var/tmp" /etc/my.cnf
 
 # Set some Sentora custom configuration settings (using. setso and setzadmin)
-$Panelpath/panel/bin/setzadmin --set "$zadminNewPass";
-$Panelpath/panel/bin/setso --set zpanel_domain $fqdn
-$Panelpath/panel/bin/setso --set server_ip $publicip
-$Panelpath/panel/bin/setso --set apache_changed "true"
+$PANEL_PATH/panel/bin/setzadmin --set "$zadminNewPass";
+$PANEL_PATH/panel/bin/setso --set zpanel_domain $fqdn
+$PANEL_PATH/panel/bin/setso --set server_ip $publicip
+$PANEL_PATH/panel/bin/setso --set apache_changed "true"
 
 # We'll store the passwords so that users can review them later if required.
 touch /root/passwords.txt;
@@ -352,41 +359,41 @@ echo "Panel Domain: $fqdn" >> /root/passwords.txt
 
 # Postfix specific installation tasks...
 sed -i "s|;date.timezone =|date.timezone = $tz|" /etc/php.ini
-sed -i "s|;upload_tmp_dir =|upload_tmp_dir = $paneldata/temp/|" /etc/php.ini
-mkdir $paneldata/vmail
-chmod -R 770 $paneldata/vmail
-useradd -r -u 101 -g mail -d $paneldata/vmail -s /sbin/nologin -c "Virtual mailbox" vmail
-chown -R vmail:mail $paneldata/vmail
+sed -i "s|;upload_tmp_dir =|upload_tmp_dir = $PANEL_DATA/temp/|" /etc/php.ini
+mkdir $PANEL_DATA/vmail
+chmod -R 770 $PANEL_DATA/vmail
+useradd -r -u 101 -g mail -d $PANEL_DATA/vmail -s /sbin/nologin -c "Virtual mailbox" vmail
+chown -R vmail:mail $PANEL_DATA/vmail
 mkdir -p /var/spool/vacation
 useradd -r -d /var/spool/vacation -s /sbin/nologin -c "Virtual vacation" vacation
 chmod -R 770 /var/spool/vacation
-ln -s $Panelpath/configs/postfix/vacation.pl /var/spool/vacation/vacation.pl
+ln -s $PANEL_PATH/configs/postfix/vacation.pl /var/spool/vacation/vacation.pl
 postmap /etc/postfix/transport
 chown -R vacation:vacation /var/spool/vacation
 if ! grep -q "127.0.0.1 autoreply.$fqdn" /etc/hosts; then echo "127.0.0.1 autoreply.$fqdn" >> /etc/hosts; fi
-sed -i "s|myhostname = control.yourdomain.com|myhostname = $fqdn|" $Panelpath/configs/postfix/main.cf
-sed -i "s|mydomain = control.yourdomain.com|mydomain = $fqdn|" $Panelpath/configs/postfix/main.cf
+sed -i "s|myhostname = control.yourdomain.com|myhostname = $fqdn|" $PANEL_PATH/configs/postfix/main.cf
+sed -i "s|mydomain = control.yourdomain.com|mydomain = $fqdn|" $PANEL_PATH/configs/postfix/main.cf
 rm -rf /etc/postfix/main.cf /etc/postfix/master.cf
-ln -s $Panelpath/configs/postfix/master.cf /etc/postfix/master.cf
-ln -s $Panelpath/configs/postfix/main.cf /etc/postfix/main.cf
-sed -i "s|password \= postfix|password \= $postfixpassword|" $Panelpath/configs/postfix/mysql-relay_domains_maps.cf
-sed -i "s|password \= postfix|password \= $postfixpassword|" $Panelpath/configs/postfix/mysql-virtual_alias_maps.cf
-sed -i "s|password \= postfix|password \= $postfixpassword|" $Panelpath/configs/postfix/mysql-virtual_domains_maps.cf
-sed -i "s|password \= postfix|password \= $postfixpassword|" $Panelpath/configs/postfix/mysql-virtual_mailbox_limit_maps.cf
-sed -i "s|password \= postfix|password \= $postfixpassword|" $Panelpath/configs/postfix/mysql-virtual_mailbox_maps.cf
-sed -i "s|\$db_password \= 'postfix';|\$db_password \= '$postfixpassword';|" $Panelpath/configs/postfix/vacation.conf
+ln -s $PANEL_PATH/configs/postfix/master.cf /etc/postfix/master.cf
+ln -s $PANEL_PATH/configs/postfix/main.cf /etc/postfix/main.cf
+sed -i "s|password \= postfix|password \= $postfixpassword|" $PANEL_PATH/configs/postfix/mysql-relay_domains_maps.cf
+sed -i "s|password \= postfix|password \= $postfixpassword|" $PANEL_PATH/configs/postfix/mysql-virtual_alias_maps.cf
+sed -i "s|password \= postfix|password \= $postfixpassword|" $PANEL_PATH/configs/postfix/mysql-virtual_domains_maps.cf
+sed -i "s|password \= postfix|password \= $postfixpassword|" $PANEL_PATH/configs/postfix/mysql-virtual_mailbox_limit_maps.cf
+sed -i "s|password \= postfix|password \= $postfixpassword|" $PANEL_PATH/configs/postfix/mysql-virtual_mailbox_maps.cf
+sed -i "s|\$db_password \= 'postfix';|\$db_password \= '$postfixpassword';|" $PANEL_PATH/configs/postfix/vacation.conf
 
 # Dovecot specific installation tasks (includes Sieve)
-mkdir $paneldata/sieve
-chown -R vmail:mail $paneldata/sieve
+mkdir $PANEL_DATA/sieve
+chown -R vmail:mail $PANEL_DATA/sieve
 mkdir /var/lib/dovecot/sieve/
 touch /var/lib/dovecot/sieve/default.sieve
-ln -s $Panelpath/configs/dovecot2/globalfilter.sieve $paneldata/sieve/globalfilter.sieve
+ln -s $PANEL_PATH/configs/dovecot2/globalfilter.sieve $PANEL_DATA/sieve/globalfilter.sieve
 rm -rf /etc/dovecot/dovecot.conf
-ln -s $Panelpath/configs/dovecot2/dovecot.conf /etc/dovecot/dovecot.conf
+ln -s $PANEL_PATH/configs/dovecot2/dovecot.conf /etc/dovecot/dovecot.conf
 sed -i "s|postmaster_address = postmaster@your-domain.tld|postmaster_address = postmaster@$fqdn|" /etc/dovecot/dovecot.conf
-sed -i "s|password=postfix|password=$postfixpassword|" $Panelpath/configs/dovecot2/dovecot-dict-quota.conf
-sed -i "s|password=postfix|password=$postfixpassword|" $Panelpath/configs/dovecot2/dovecot-mysql.conf
+sed -i "s|password=postfix|password=$postfixpassword|" $PANEL_PATH/configs/dovecot2/dovecot-dict-quota.conf
+sed -i "s|password=postfix|password=$postfixpassword|" $PANEL_PATH/configs/dovecot2/dovecot-mysql.conf
 touch /var/log/dovecot.log
 touch /var/log/dovecot-info.log
 touch /var/log/dovecot-debug.log
@@ -396,18 +403,18 @@ chmod 660 /var/log/dovecot*
 # ProFTPD specific installation tasks
 groupadd -g 2001 ftpgroup
 useradd -u 2001 -s /bin/false -d /bin/null -c "proftpd user" -g ftpgroup ftpuser
-sed -i "s|zpanel_proftpd@localhost root z|zpanel_proftpd@localhost root $password|" $Panelpath/configs/proftpd/proftpd-mysql.conf
+sed -i "s|zpanel_proftpd@localhost root z|zpanel_proftpd@localhost root $password|" $PANEL_PATH/configs/proftpd/proftpd-mysql.conf
 rm -rf /etc/proftpd.conf
 touch /etc/proftpd.conf
-if ! grep -q "include $Panelpath/configs/proftpd/proftpd-mysql.conf" /etc/proftpd.conf; then echo "include $Panelpath/configs/proftpd/proftpd-mysql.conf" >> /etc/proftpd.conf; fi
-chmod -R 644 $paneldata/logs/proftpd
+if ! grep -q "include $PANEL_PATH/configs/proftpd/proftpd-mysql.conf" /etc/proftpd.conf; then echo "include $PANEL_PATH/configs/proftpd/proftpd-mysql.conf" >> /etc/proftpd.conf; fi
+chmod -R 644 $PANEL_DATA/logs/proftpd
 serverhost=`hostname`
 
-# Apache HTTPD specific installation tasks...
-if ! grep -q "Include $Panelpath/configs/apache/httpd.conf" /etc/httpd/conf/httpd.conf; then echo "Include $Panelpath/configs/apache/httpd.conf" >> /etc/httpd/conf/httpd.conf; fi
+# Apache $HTTP_SERVER specific installation tasks...
+if ! grep -q "Include $PANEL_PATH/configs/apache/httpd.conf" /etc/httpd/conf/httpd.conf; then echo "Include $PANEL_PATH/configs/apache/httpd.conf" >> /etc/httpd/conf/httpd.conf; fi
 if ! grep -q "127.0.0.1 "$fqdn /etc/hosts; then echo "127.0.0.1 "$fqdn >> /etc/hosts; fi
-if ! grep -q "apache ALL=NOPASSWD: $Panelpath/panel/bin/zsudo" /etc/sudoers; then echo "apache ALL=NOPASSWD: $Panelpath/panel/bin/zsudo" >> /etc/sudoers; fi
-# Panelpath still not here
+if ! grep -q "apache ALL=NOPASSWD: $PANEL_PATH/panel/bin/zsudo" /etc/sudoers; then echo "apache ALL=NOPASSWD: $PANEL_PATH/panel/bin/zsudo" >> /etc/sudoers; fi
+# PANEL_PATH still not here
 sed -i 's|DocumentRoot "/var/www/html"|DocumentRoot "/etc/zpanel/panel"|' /etc/httpd/conf/httpd.conf
 #Centos 7 specific
 if [ $VER = "7" ]; then
@@ -419,49 +426,39 @@ sed -i 's/Allow from all/Require all granted/g' /etc/zpanel/configs/apache/*.con
 sed -i 's|Order allow,deny|Require all granted|I'  /etc/zpanel/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
 sed -i '/Allow from all/d' /etc/zpanel/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
 fi
-chown -R apache:apache $paneldata/temp/
+chown -R $HTTP_USER:$HTTP_USER $PANEL_DATA/temp/
 #Set keepalive on (default is off)
 sed -i "s|KeepAlive Off|KeepAlive On|" /etc/httpd/conf/httpd.conf
 
 # PHP specific installation tasks...
 sed -i "s|;date.timezone =|date.timezone = $tz|" /etc/php.ini
-sed -i "s|;upload_tmp_dir =|upload_tmp_dir = $paneldata/temp/|" /etc/php.ini
+sed -i "s|;upload_tmp_dir =|upload_tmp_dir = $PANEL_DATA/temp/|" /etc/php.ini
 #Disable php signature in headers to hide it from hackers
 sed -i "s|expose_php = On|expose_php = Off|" /etc/php.ini
 
 # Permissions fix for Apache and ProFTPD (to enable them to play nicely together!)
 if ! grep -q "umask 002" /etc/sysconfig/httpd; then echo "umask 002" >> /etc/sysconfig/httpd; fi
 if ! grep -q "127.0.0.1 $serverhost" /etc/hosts; then echo "127.0.0.1 $serverhost" >> /etc/hosts; fi
-usermod -a -G apache ftpuser
-usermod -a -G ftpgroup apache
+usermod -a -G $HTTP_USER ftpuser
+usermod -a -G ftpgroup $HTTP_USER
 
 # BIND specific installation tasks...
-chmod -R 777 $Panelpath/configs/bind/zones/
+chmod -R 777 $PANEL_PATH/configs/bind/zones/
 chmod 751 /var/named
 chmod 771 /var/named/data
 rm -rf /etc/named.conf /etc/rndc.conf /etc/rndc.key
 rndc-confgen -a
-ln -s $Panelpath/configs/bind/named.conf /etc/named.conf
-ln -s $Panelpath/configs/bind/rndc.conf /etc/rndc.conf
+ln -s $PANEL_PATH/configs/bind/named.conf /etc/named.conf
+ln -s $PANEL_PATH/configs/bind/rndc.conf /etc/rndc.conf
 cat /etc/rndc.key /etc/named.conf | tee named.conf > /dev/null
 cat /etc/rndc.key /etc/rndc.conf | tee named.conf > /dev/null
 
 # CRON specific installation tasks...
-mkdir -p /var/spool/cron/
-mkdir -p /etc/cron.d/
-touch /var/spool/cron/apache
-touch /etc/cron.d/apache
-crontab -u apache /var/spool/cron/apache
+sudo crontab -l -u $HTTP_USER> /tmp/mycron; echo "*/5 * * * * nice -2 php -q $PANEL_DAEMON_PATH >> $PANEL_PATH/daemon_last_run.log 2>&1" >> /tmp/mycron; sudo crontab -u $HTTP_USER /tmp/mycron; sudo rm -f /tmp/mycron
 
-#  ISSUE WITH cron temp fix
-sed -i "s|/opt/rh/php55/root/usr/bin/php|php|" $Panelpath/configs/cron/zdaemon /etc/cron.d/zdaemon
-cp $Panelpath/configs/cron/zdaemon /etc/cron.d/zdaemon
-chmod 744 /var/spool/cron
-chmod 644 /var/spool/cron/apache
-chmod -R 644 /etc/cron.d/
-chown -R apache:apache /var/spool/cron/
-#Easy way fix
-crontab -l -u apache> mycron; echo "*/5 * * * * nice -2 php -q /etc/zpanel/panel/bin/daemon.php >> /dev/null 2>&1" >> mycron; crontab -u apache mycron
+command="php $INSTALL/indefero/scripts/gitcron.php"
+job="0 0 * * 0 $command"
+cat <(fgrep -i -v "$command" <(crontab -l)) <(echo "$job") | crontab -
 
 # Webalizer specific installation tasks...
 rm -rf /etc/webalizer.conf
@@ -469,37 +466,37 @@ rm -rf /etc/webalizer.conf
 
 
 # Roundcube specific installation tasks...
-sed -i "s|YOUR_MYSQL_ROOT_PASSWORD|$password|" $Panelpath/configs/roundcube/db.inc.php
-sed -i "s|#||" $panelpath/configs/roundcube/db.inc.php
-sed -i "s|rcmail-!24ByteDESkey\*Str|$roundcube_des_key|" $panelpath/configs/roundcube/main.inc.php
-rm -rf $panelpath/panel/etc/apps/webmail/config/main.inc.php
-ln -s $panelpath/configs/roundcube/main.inc.php $panelpath/panel/etc/apps/webmail/config/main.inc.php
-ln -s $panelpath/configs/roundcube/config.inc.php $panelpath/panel/etc/apps/webmail/plugins/managesieve/config.inc.php
-ln -s $panelpath/configs/roundcube/db.inc.php $panelpath/panel/etc/apps/webmail/config/db.inc.php
+sed -i "s|YOUR_MYSQL_ROOT_PASSWORD|$password|" $PANEL_PATH/configs/roundcube/db.inc.php
+sed -i "s|#||" $PANEL_PATH/configs/roundcube/db.inc.php
+sed -i "s|rcmail-!24ByteDESkey\*Str|$roundcube_des_key|" $PANEL_PATH/configs/roundcube/main.inc.php
+rm -rf $PANEL_PATH/panel/etc/apps/webmail/config/main.inc.php
+ln -s $PANEL_PATH/configs/roundcube/main.inc.php $PANEL_PATH/panel/etc/apps/webmail/config/main.inc.php
+ln -s $PANEL_PATH/configs/roundcube/config.inc.php $PANEL_PATH/panel/etc/apps/webmail/plugins/managesieve/config.inc.php
+ln -s $PANEL_PATH/configs/roundcube/db.inc.php $PANEL_PATH/panel/etc/apps/webmail/config/db.inc.php
 
 # Enable system services and start/restart them as required.
-chkconfig httpd on
+chkconfig $HTTP_SERVER on
 chkconfig postfix on
 chkconfig dovecot on
 chkconfig crond on
-chkconfig $dbserver on
+chkconfig $DB_SERVER on
 chkconfig named on
 chkconfig proftpd on
-service httpd start
+service $HTTP_SERVER start
 service postfix restart
 service dovecot start
 service crond start
-service $dbserver restart
+service $DB_SERVER restart
 service named start
 service proftpd start
 service atd start
-php -q $panelpath/panel/bin/daemon.php
+php -q $PANEL_PATH/panel/bin/daemon.php
 # restart all service
-service httpd restart
+service $HTTP_SERVER restart
 service postfix restart
 service dovecot restart
 service crond restart
-service $dbserver restart
+service $DB_SERVER restart
 service named restart
 service proftpd restart
 service atd restart
@@ -508,8 +505,8 @@ service atd restart
 cd ../
 rm -rf zp_install_cache/ sentora/
 # again run daemon as we had a bug
-php -q $panelpath/panel/bin/daemon.php
-service httpd restart
+php -q $PANEL_PATH/panel/bin/daemon.php
+service $HTTP_SERVER restart
 
 # Advise the user that Sentora is now installed and accessible.
 echo -e "##############################################################" &>/dev/tty
