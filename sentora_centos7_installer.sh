@@ -1,20 +1,5 @@
 #!/usr/bin/env bash
-
-# OS VERSION: CentOS 6.4+ Minimal
-# ARCH: 32bit + 64bit
-
-SEN_VERSION="master"
-PANEL_PATH="/etc/zpanel"
-PANEL_DATA="/var/zpanel"
-DB_SERVER="mariadb"
-HTTP_SERVER="httpd"
-FIREWALL_SERVICE="iptables"
-HTTP_USER="apache"
-PHP_BIN_PATH="php"
-PANEL_DAEMON_PATH="$PANEL_PATH/panel/bin/daemon.php"
-PACKAGE_INSTALLER="yum"
-PUBLIC_IP="127.0.0.1"
-
+#
 # Official Sentora Automated Installation Script
 # =============================================
 #
@@ -31,6 +16,22 @@ PUBLIC_IP="127.0.0.1"
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+
+## Default configuration variables ##
+SEN_VERSION="master"
+PANEL_PATH="/etc/zpanel"
+PANEL_DATA="/var/zpanel"
+DB_SERVER="mariadb"
+HTTP_SERVER="httpd"
+FIREWALL_SERVICE="iptables"
+HTTP_USER="apache"
+PHP_BIN_PATH="php"
+PANEL_DAEMON_PATH="$PANEL_PATH/panel/bin/daemon.php"
+PACKAGE_INSTALLER="yum"
+PUBLIC_IP="127.0.0.1"
+FQDN=$(hostname)
+
+
 
 # First we check if the user is 'root' before allowing installation to commence
 if [ $UID -ne 0 ]; then
@@ -61,7 +62,7 @@ fi
 # Ensure the installer is launched and can only be launched on CentOs 6.x/ centos 7.x Supported
 BITS=$(uname -m | sed 's/x86_//;s/i[3-6]86/32/')
 if [ -f /etc/centos-release ]; then
-  OS="CentOs"
+  OS="CentOS"
   VERFULL=$(cat /etc/centos-release | sed 's/^.*release //;s/ (Fin.*$//')
   VER=${VERFULL:0:1} # retunr 6 or 7
   VERMINOR=${VERFULL:0:3} # return 6.x or 7.x
@@ -81,8 +82,10 @@ if [ "$VER" = "7" ]; then
  else 
  DB_SERVER="mysqld" && echo "Sentora will use MySQL server for backend storage."
 fi
+
+
 #warning the last version of centos and 6.x
-if [[ "$OS" = "CentOs" ]] && ( [[ "$VER" = "6" ]] || [[ "$VER" = "7" ]] ) ; then 
+if [[ "$OS" = "CentOS" ]] && ( [[ "$VER" = "6" ]] || [[ "$VER" = "7" ]] ) ; then 
   echo "Congratulations your operating system is supported by our automated installer. Continuing the installation."
 else
   echo "Unfortunatly this installer only supports the installation of Sentora on CentOS 6.x or 7.x." 
@@ -135,9 +138,7 @@ done
 $PACKAGE_INSTALLER -y -q install tzdata wget &>/dev/null
 
 # Set some installation defaults/auto assignments
-FQDN=$(hostname)
 PUBLIC_IP=$(wget http://api.sentora.org/ip.txt -q -O -)
-
 echo "echo \$TZ > /etc/timezone" >> /usr/bin/tzselect
 
 # Installer options
