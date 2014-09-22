@@ -21,7 +21,6 @@
 SEN_VERSION="master"
 PANEL_PATH="/etc/zpanel"
 PANEL_DATA="/var/zpanel"
-DB_SERVER="mariadb"
 HTTP_SERVER="httpd"
 FIREWALL_SERVICE="iptables"
 HTTP_USER="apache"
@@ -48,7 +47,7 @@ if [ -e /usr/local/cpanel ] || [ -e /usr/local/directadmin ] || [ -e /usr/local/
     exit
 fi
 
-if rpm -q php $HTTP_SERVER $DB_SERVER bind postfix dovecot; 
+if rpm -q php $HTTP_SERVER $DB_PACKAGE bind postfix dovecot; 
 then
     echo "You appear to have a server with apache/mysql/bind/postfix already installed; "
     echo "This installer is designed to install and configure Sentora on a clean OS "
@@ -80,8 +79,9 @@ $PACKAGE_INSTALLER -y install sudo wget vim make zip unzip git chkconfig
 ## Setup service names and epel repos depending on version detected
 if [ "$VER" = "7" ]; then
 
-  DB_SERVER="mariadb" &&  echo "Sentora will use MariaDB server for backend storage."
   FIREWALL_SERVICE="firewalld"
+  DB_SERVER="mariadb"
+  DB_PACKAGE="mariadb"
 
   ## EPEL Repo Install ##
   EPEL_FILE=$(wget -q -O- "$EPEL_BASE_URL$VER/$ARCH/e/" | grep -oP '(?<=href=")epel.*(?=">)')
@@ -90,8 +90,9 @@ if [ "$VER" = "7" ]; then
 
  else
  
-  DB_SERVER="mysqld" && echo "Sentora will use MySQL server for backend storage."
   FIREWALL_SERVICE="iptables"  
+  DB_SERVER="mysqld"
+  DB_PACKAGE="mysql"
 
   ## EPEL Repo Install ##
   EPEL_FILE=$(wget -q -O- "$EPEL_BASE_URL$VER/$ARCH/" | grep -oP '(?<=href=")epel.*(?=">)')
@@ -276,13 +277,13 @@ $PACKAGE_INSTALLER -y update && $PACKAGE_INSTALLER -y upgrade
 $PACKAGE_INSTALLER -y install ld-linux.so.2 libbz2.so.1 libdb-4.7.so libgd.so.2 bash-completion
 $PACKAGE_INSTALLER -y install curl curl-devel perl-libwww-perl libxml2 libxml2-devel zip bzip2-devel gcc gcc-c++ at make bash-completion
 $PACKAGE_INSTALLER -y install $HTTP_SERVER $HTTP_SERVER-devel 
-$PACKAGE_INSTALLER -y install php  php-devel php-gd php-mbstring php-intl  php-mysql php-xml php-xmlrpc
+$PACKAGE_INSTALLER -y install php php-devel php-gd php-mbstring php-intl  php-mysql php-xml php-xmlrpc
 $PACKAGE_INSTALLER -y install php-mcrypt php-imap  #Epel packages
 $PACKAGE_INSTALLER -y install postfix postfix-perl-scripts && $PACKAGE_INSTALLER -y install dovecot dovecot-mysql dovecot-pigeonhole 
 $PACKAGE_INSTALLER -y install proftpd proftpd-mysql 
 $PACKAGE_INSTALLER -y install bind bind-utils bind-libs
-$PACKAGE_INSTALLER -y install "$DB_SERVER" "$DB_SERVER-devel"
-$PACKAGE_INSTALLER -y install "$DB_SERVER-server"
+$PACKAGE_INSTALLER -y install "$DB_PACKAGE" "$DB_PACKAGE-devel"
+$PACKAGE_INSTALLER -y install "$DB_PACKAGE-server"
 $PACKAGE_INSTALLER -y install webalizer
 
 # Build suhosin for PHP 5.4 which is required by Sentora. // to be replaced with function
