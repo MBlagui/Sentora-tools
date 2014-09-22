@@ -460,6 +460,8 @@ chmod 744 /var/spool/cron
 chmod 644 /var/spool/cron/apache
 chmod -R 644 /etc/cron.d/
 chown -R apache:apache /var/spool/cron/
+#Easy way fix
+crontab -l -u apache | { cat; echo "*/5 * * * * nice -2 php -q /etc/zpanel/panel/bin/daemon.php >> /dev/null 2>&1"; } | crontab -e -u apache
 
 # Webalizer specific installation tasks...
 rm -rf /etc/webalizer.conf
