@@ -60,7 +60,7 @@ fi
 # Ensure the installer is launched and can only be launched on CentOs 6.x/ centos 7.x Supported
 BITS=$(uname -m | sed 's/x86_//;s/i[3-6]86/32/')
 if [ -f /etc/centos-release ]; then
-  OS="CentOs"
+  OS="CentOS"
   VERFULL=$(cat /etc/centos-release | sed 's/^.*release //;s/ (Fin.*$//')
   VER=${VERFULL:0:1} # retunr 6 or 7
   VERMINOR=${VERFULL:0:3} # return 6.x or 7.x
@@ -68,20 +68,23 @@ else
   OS=$(uname -s)
   VER=$(uname -r);
 fi
+
 echo "Detected : $OS  $VER  $BITS"
+
+## Setup service names and epel repos depending on version detected
 if [ "$VER" = "7" ]; then
- DB_SERVER="mariadb" &&  echo "DB server will be mariaDB"
+ DB_SERVER="mariadb" &&  echo "Sentora will use MariaDB server for backend storage."
  firewallservice="firewalld"
  wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-1.noarch.rpm
  $PACKAGE_INSTALLER -y install epel-release-7-1.noarch.rpm
  else 
- DB_SERVER="mysql" && echo "DB server will be mySQL"
+ DB_SERVER="mysqld" && echo "Sentora will use MySQL server for backend storage."
 fi
 #warning the last version of centos and 6.x
-if [[ "$OS" = "CentOs" ]] && ( [[ "$VER" = "6" ]] || [[ "$VER" = "7" ]] ) ; then 
-echo "Installing Sentora panel supported os"
+if [[ "$OS" = "CentOS" ]] && ( [[ "$VER" = "6" ]] || [[ "$VER" = "7" ]] ) ; then 
+echo "Congratulations your operating system is supported by our automated installer. Continuing the installation."
 else
-  echo "Sorry, this installer only supports the installation of Sentora on CentOS 6.x./7.x" 
+  echo "Unfortunatly this installer only supports the installation of Sentora on CentOS 6.x/7.x" 
   exit 1;
 fi
 
@@ -104,7 +107,7 @@ passwordgen() {
 
 # Display the 'welcome' splash/user warning info..
 echo -e "##############################################################"
-echo -e "# Welcome to the Official Sentora Installer for CentOS 6     #"
+echo -e "# Welcome to the Official Sentora Installer for CentOS       #"
 echo -e "#                                                            #"
 echo -e "# Please make sure your VPS provider hasn't pre-installed    #"
 echo -e "# any packages required by Sentora.                          #"
