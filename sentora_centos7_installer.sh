@@ -30,6 +30,8 @@ PANEL_DAEMON_PATH="$PANEL_PATH/panel/bin/daemon.php"
 PACKAGE_INSTALLER="yum"
 PUBLIC_IP="127.0.0.1"
 FQDN=$(hostname)
+ARCH=$(uname -m)
+EPEL_BASE_URL="http://dl.fedoraproject.org/pub/epel/";
 
 
 
@@ -75,12 +77,25 @@ echo "Detected : $OS  $VER  $BITS"
 
 ## Setup service names and epel repos depending on version detected
 if [ "$VER" = "7" ]; then
- DB_SERVER="mariadb" &&  echo "Sentora will use MariaDB server for backend storage."
- firewallservice="firewalld"
- wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-1.noarch.rpm
- $PACKAGE_INSTALLER -y install epel-release-7-1.noarch.rpm
- else 
- DB_SERVER="mysqld" && echo "Sentora will use MySQL server for backend storage."
+
+  DB_SERVER="mariadb" &&  echo "Sentora will use MariaDB server for backend storage."
+  FIREWALL_SERVICE="firewalld"
+
+  ## EPEL Repo Install ##
+  EPEL_FILE=$(wget -q -O- "$EPEL_BASE_URL$VER/$ARCH/e/" | grep -oP '(?<=href=")epel.*(?=">)')
+  wget "$EPEL_BASE_URL$VER/$ARCH/e/$EPEL_FILE"
+  $PACKAGE_INSTALLER -y install epel-release*.rpm
+
+ else
+ 
+  DB_SERVER="mysqld" && echo "Sentora will use MySQL server for backend storage."
+  FIREWALL_SERVICE="iptables"  
+
+  ## EPEL Repo Install ##
+  EPEL_FILE=$(wget -q -O- "$EPEL_BASE_URL$VER/$ARCH/e/" | grep -oP '(?<=href=")epel.*(?=">)')
+  wget "$EPEL_BASE_URL$VER/$ARCH/$EPEL_FILE"
+  $PACKAGE_INSTALLER -y install epel-release*.rpm
+
 fi
 
 
@@ -221,10 +236,10 @@ setenforce 0
 
 # Stop conflicting services and iptables to ensure all services will work
 service sendmail stop
-service "$firewallservice" save # replaced iptables with firewallD
-service "$firewallservice" stop
+service "$FIREWALL_SERVICE" save # replaced iptables with firewallD
+service "$FIREWALL_SERVICE" stop
 chkconfig sendmail off
-chkconfig "$firewallservice" off
+chkconfig "$FIREWALL_SERVICE" off
 
 # Start log creation.
 echo -e ""
@@ -252,9 +267,6 @@ cd ../zp_install_cache/
 
 # Installing epel repo for extra packages php-suhosin php-mcrypt bash-completion proftpd proftpd-mysql 
 
-# disable fedora  here centos 6
-# rpm --import https://fedoraproject.org/static/0608B895.txt
-# cp etc/build/config_packs/centos_6/yum.repos.d/epel.repo /etc/yum.repos.d/epel.repo
 
 # We now update the server software packages.
 $PACKAGE_INSTALLER -y update && $PACKAGE_INSTALLER -y upgrade
