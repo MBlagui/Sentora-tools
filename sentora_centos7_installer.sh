@@ -64,7 +64,7 @@ BITS=$(uname -m | sed 's/x86_//;s/i[3-6]86/32/')
 if [ -f /etc/centos-release ]; then
   OS="CentOS"
   VERFULL=$(cat /etc/centos-release | sed 's/^.*release //;s/ (Fin.*$//')
-  VER=${VERFULL:0:1} # retunr 6 or 7
+  VER=${VERFULL:0:1} # returns 6 or 7
   VERMINOR=${VERFULL:0:3} # return 6.x or 7.x
 else
   OS=$(uname -s)
@@ -328,7 +328,7 @@ ln -s $PANEL_PATH/panel/bin/setso /usr/bin/setso
 ln -s $PANEL_PATH/panel/bin/setzadmin /usr/bin/setzadmin
 chmod +x $PANEL_PATH/panel/bin/zppy
 chmod +x $PANEL_PATH/panel/bin/setso
-cp -R $PANEL_PATH/panel/etc/build/config_packs/centos_6/. $PANEL_PATH/configs/
+cp -R $PANEL_PATH/panel/etc/build/config_packs/centos_$VER/. $PANEL_PATH/configs/
 # set password after test connexion
 cc -o $PANEL_PATH/panel/bin/zsudo $PANEL_PATH/configs/bin/zsudo.c
 sudo chown root $PANEL_PATH/panel/bin/zsudo
@@ -433,10 +433,8 @@ sed -i 's|DocumentRoot "/var/www/html"|DocumentRoot "/etc/zpanel/panel"|' /etc/h
 #Centos 7 specific
 if [ $VER = "7" ]; then
 echo "Centos 7 detected updating apache 2.4"
-sed -i 's|Ornder allow,deny|Require all granted|I'  /etc/zpanel/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
+sed -i 's|Order allow,deny|Require all granted|I'  /etc/zpanel/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
 sed -i 's/Allow from all/ /g' /etc/zpanel/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
-sed -i 's/Order allow,deny/ /g' /etc/zpanel/configs/apache/*.conf
-sed -i 's/Allow from all/Require all granted/g' /etc/zpanel/configs/apache/*.conf
 sed -i 's|Order allow,deny|Require all granted|I'  /etc/zpanel/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
 sed -i '/Allow from all/d' /etc/zpanel/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
 fi
