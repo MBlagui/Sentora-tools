@@ -33,8 +33,6 @@ FQDN=$(hostname)
 ARCH=$(uname -m)
 EPEL_BASE_URL="http://dl.fedoraproject.org/pub/epel/";
 
-
-
 # First we check if the user is 'root' before allowing installation to commence
 if [ $UID -ne 0 ]; then
     echo "Installed failed! To install you must be logged in as 'root', please try again"
@@ -300,7 +298,6 @@ echo 'extension=suhosin.so' > /etc/php.d/suhosin.ini
 
 
 # Generation of random passwords
-#add proftp password
 password=`passwordgen`;
 proftppassword=`passwordgen`;
 postfixpassword=`passwordgen`;
