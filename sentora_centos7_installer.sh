@@ -73,6 +73,10 @@ fi
 
 echo "Detected : $OS  $VER  $BITS"
 
+## Install required packages for installer to work
+$PACKAGE_INSTALLER -y install sudo wget vim make zip unzip git chkconfig
+
+
 ## Setup service names and epel repos depending on version detected
 if [ "$VER" = "7" ]; then
 
@@ -246,11 +250,8 @@ uname -a
 echo -e ""
 rpm -qa
 
-# Removal of conflicting packages prior to Sentora installation.
+## Remove known problematic packages
 $PACKAGE_INSTALLER -y remove bind-chroot qpid-cpp-client
-
-# Install some standard utility packages required by the installer and/or Sentora.
-$PACKAGE_INSTALLER -y install sudo wget vim make zip unzip git chkconfig
 
 # Cloning Sentora from GitHub
 echo "Downloading Sentora, Please wait, this may take several minutes, the installer will continue after this is complete!"
