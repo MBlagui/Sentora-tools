@@ -60,7 +60,7 @@ fi
 # Ensure the installer is launched and can only be launched on CentOs 6.x/ centos 7.x Supported
 BITS=$(uname -m | sed 's/x86_//;s/i[3-6]86/32/')
 if [ -f /etc/centos-release ]; then
-  OS="CentOS"
+  OS="CentOs"
   VERFULL=$(cat /etc/centos-release | sed 's/^.*release //;s/ (Fin.*$//')
   VER=${VERFULL:0:1} # retunr 6 or 7
   VERMINOR=${VERFULL:0:3} # return 6.x or 7.x
@@ -81,10 +81,10 @@ if [ "$VER" = "7" ]; then
  DB_SERVER="mysqld" && echo "Sentora will use MySQL server for backend storage."
 fi
 #warning the last version of centos and 6.x
-if [[ "$OS" = "CentOS" ]] && ( [[ "$VER" = "6" ]] || [[ "$VER" = "7" ]] ) ; then 
-echo "Congratulations your operating system is supported by our automated installer. Continuing the installation."
+if [[ "$OS" = "CentOs" ]] && ( [[ "$VER" = "6" ]] || [[ "$VER" = "7" ]] ) ; then 
+  echo "Congratulations your operating system is supported by our automated installer. Continuing the installation."
 else
-  echo "Unfortunatly this installer only supports the installation of Sentora on CentOS 6.x/7.x" 
+  echo "Unfortunatly this installer only supports the installation of Sentora on CentOS 6.x or 7.x." 
   exit 1;
 fi
 
@@ -107,7 +107,7 @@ passwordgen() {
 
 # Display the 'welcome' splash/user warning info..
 echo -e "##############################################################"
-echo -e "# Welcome to the Official Sentora Installer for CentOS       #"
+echo -e "# Welcome to the Official Sentora Installer for CentOS 6     #"
 echo -e "#                                                            #"
 echo -e "# Please make sure your VPS provider hasn't pre-installed    #"
 echo -e "# any packages required by Sentora.                          #"
