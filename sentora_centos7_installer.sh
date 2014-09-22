@@ -90,7 +90,7 @@ if [ "$VER" = "7" ]; then
   FIREWALL_SERVICE="iptables"  
 
   ## EPEL Repo Install ##
-  EPEL_FILE=$(wget -q -O- "$EPEL_BASE_URL$VER/$ARCH/e/" | grep -oP '(?<=href=")epel.*(?=">)')
+  EPEL_FILE=$(wget -q -O- "$EPEL_BASE_URL$VER/$ARCH/" | grep -oP '(?<=href=")epel.*(?=">)')
   wget "$EPEL_BASE_URL$VER/$ARCH/$EPEL_FILE"
   $PACKAGE_INSTALLER -y install epel-release*.rpm
 
