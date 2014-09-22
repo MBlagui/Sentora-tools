@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
-# OS VERSION: CentOS 6.4+ Minimal
+# OS VERSION: CentOS 6.4+/7.x Minimal
 # ARCH: 32bit + 64bit
 
 SEN_VERSION="master"
 PANEL_PATH="/etc/zpanel"
 PANEL_DATA="/var/zpanel"
 DB_SERVER="mariadb"
+DB_DAEMON="mariadb"
 HTTP_SERVER="httpd"
 FIREWALL_SERVICE="iptables"
 HTTP_USER="apache"
@@ -76,6 +77,7 @@ if [ "$VER" = "7" ]; then
  $PACKAGE_INSTALLER -y install epel-release-7-1.noarch.rpm
  else 
  DB_SERVER="mysql" && echo "DB server will be mySQL"
+ DB_DAEMON="mysqld"
 fi
 #warning the last version of centos and 6.x
 if [[ "$OS" = "CentOs" ]] && ( [[ "$VER" = "6" ]] || [[ "$VER" = "7" ]] ) ; then 
@@ -328,7 +330,7 @@ ln -s $PANEL_PATH/configs/phpmyadmin/config.inc.php $PANEL_PATH/panel/etc/apps/p
 rm -rf $PANEL_PATH/panel/etc/apps/phpmyadmin/setup
 
 # MySQL specific installation tasks...
-service $DB_SERVER start 
+service $DB_DAEMON start 
 mysqladmin -u root password "$password"
 until mysql -u root -p$password -e ";" > /dev/null 2>&1 ; do
 read -s -p "enter your root $DB_SERVER password : " password
@@ -479,7 +481,7 @@ chkconfig $HTTP_SERVER on
 chkconfig postfix on
 chkconfig dovecot on
 chkconfig crond on
-chkconfig $DB_SERVER on
+chkconfig $DB_DAEMON on
 chkconfig named on
 chkconfig proftpd on
 service $HTTP_SERVER start
@@ -496,7 +498,7 @@ service $HTTP_SERVER restart
 service postfix restart
 service dovecot restart
 service crond restart
-service $DB_SERVER restart
+service $DB_DAEMON restart
 service named restart
 service proftpd restart
 service atd restart
