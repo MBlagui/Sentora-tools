@@ -139,7 +139,7 @@ while true; do
 	echo -e "Enter the FQDN you will use to access Sentora on your server."
 	echo -e "- It MUST be a sub-domain of you main domain, it MUST NOT be your main domain only. Example: panel.yourdomain.com"
 	echo -e "- Remember that the sub-domain ('panel' in the example) MUST be setup in your DNS nameserver."
-	read -e -p "FQDN for zpanel: " -i "$fqdn" fqdn
+	read -e -p "FQDN for Sentora - i.e. sub-domain.sentora.installation: " -i "$fqdn" fqdn
 	read -e -p "Enter the public (external) server IP: " -i "$publicip" publicip
 	read -e -p "Sentora is now ready to install, do you wish to continue (y/n)" yn
 	case $yn in
