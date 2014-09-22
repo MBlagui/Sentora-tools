@@ -13,6 +13,7 @@ HTTP_USER="apache"
 PHP_BIN_PATH="php"
 PANEL_DAEMON_PATH="$PANEL_PATH/panel/bin/daemon.php"
 PACKAGE_INSTALLER="yum"
+PUBLIC_IP="127.0.0.1"
 
 # Official Sentora Automated Installation Script
 # =============================================
@@ -134,8 +135,8 @@ done
 $PACKAGE_INSTALLER -y -q install tzdata wget &>/dev/null
 
 # Set some installation defaults/auto assignments
-fqdn=$(`/bin/hostname`)
-publicip=$(wget http://api.sentora.org/ip.txt -q -O -)
+FQDN=$(hostname)
+PUBLIC_IP=$(wget http://api.sentora.org/ip.txt -q -O -)
 
 echo "echo \$TZ > /etc/timezone" >> /usr/bin/tzselect
 
@@ -147,8 +148,8 @@ while true; do
 	echo -e "Enter the FQDN you will use to access Sentora on your server."
 	echo -e "- It MUST be a sub-domain of you main domain, it MUST NOT be your main domain only. Example: panel.yourdomain.com"
 	echo -e "- Remember that the sub-domain ('panel' in the example) MUST be setup in your DNS nameserver."
-	read -e -p "FQDN for Sentora: " -i "$fqdn" fqdn
-	read -e -p "Enter the public (external) server IP: " -i "$publicip" publicip
+	read -e -p "Full qualified domain name for Sentora: " -i "$FQDN" FQDN
+	read -e -p "Enter the public (external) server IP: " -i "$PUBLIC_IP" PUBLIC_IP
 	read -e -p "Sentora is now ready to install, do you wish to continue (y/n)" yn
 	case $yn in
 		[Yy]* ) break;;
@@ -348,8 +349,8 @@ sed -i "/symbolic-links=/a \secure-file-priv=/var/tmp" /etc/my.cnf
 
 # Set some Sentora custom configuration settings (using. setso and setzadmin)
 $PANEL_PATH/panel/bin/setzadmin --set "$zadminNewPass";
-$PANEL_PATH/panel/bin/setso --set zpanel_domain $fqdn
-$PANEL_PATH/panel/bin/setso --set server_ip $publicip
+$PANEL_PATH/panel/bin/setso --set zpanel_domain $FQDN
+$PANEL_PATH/panel/bin/setso --set server_ip $PUBLIC_IP
 $PANEL_PATH/panel/bin/setso --set apache_changed "true"
 
 # We'll store the passwords so that users can review them later if required.
@@ -357,8 +358,8 @@ touch /root/passwords.txt;
 echo "zadmin Password: $zadminNewPass" >> /root/passwords.txt;
 echo "MySQL Root Password: $password" >> /root/passwords.txt
 echo "MySQL Postfix Password: $postfixpassword" >> /root/passwords.txt
-echo "IP Address: $publicip" >> /root/passwords.txt
-echo "Panel Domain: $fqdn" >> /root/passwords.txt
+echo "IP Address: $PUBLIC_IP" >> /root/passwords.txt
+echo "Panel Domain: $FQDN" >> /root/passwords.txt
 
 # Postfix specific installation tasks...
 sed -i "s|;date.timezone =|date.timezone = $tz|" /etc/php.ini
@@ -373,9 +374,9 @@ chmod -R 770 /var/spool/vacation
 ln -s $PANEL_PATH/configs/postfix/vacation.pl /var/spool/vacation/vacation.pl
 postmap /etc/postfix/transport
 chown -R vacation:vacation /var/spool/vacation
-if ! grep -q "127.0.0.1 autoreply.$fqdn" /etc/hosts; then echo "127.0.0.1 autoreply.$fqdn" >> /etc/hosts; fi
-sed -i "s|myhostname = control.yourdomain.com|myhostname = $fqdn|" $PANEL_PATH/configs/postfix/main.cf
-sed -i "s|mydomain = control.yourdomain.com|mydomain = $fqdn|" $PANEL_PATH/configs/postfix/main.cf
+if ! grep -q "127.0.0.1 autoreply.$FQDN" /etc/hosts; then echo "127.0.0.1 autoreply.$FQDN" >> /etc/hosts; fi
+sed -i "s|myhostname = control.yourdomain.com|myhostname = $FQDN|" $PANEL_PATH/configs/postfix/main.cf
+sed -i "s|mydomain = control.yourdomain.com|mydomain = $FQDN|" $PANEL_PATH/configs/postfix/main.cf
 rm -rf /etc/postfix/main.cf /etc/postfix/master.cf
 ln -s $PANEL_PATH/configs/postfix/master.cf /etc/postfix/master.cf
 ln -s $PANEL_PATH/configs/postfix/main.cf /etc/postfix/main.cf
@@ -394,7 +395,7 @@ touch /var/lib/dovecot/sieve/default.sieve
 ln -s $PANEL_PATH/configs/dovecot2/globalfilter.sieve $PANEL_DATA/sieve/globalfilter.sieve
 rm -rf /etc/dovecot/dovecot.conf
 ln -s $PANEL_PATH/configs/dovecot2/dovecot.conf /etc/dovecot/dovecot.conf
-sed -i "s|postmaster_address = postmaster@your-domain.tld|postmaster_address = postmaster@$fqdn|" /etc/dovecot/dovecot.conf
+sed -i "s|postmaster_address = postmaster@your-domain.tld|postmaster_address = postmaster@$FQDN|" /etc/dovecot/dovecot.conf
 sed -i "s|password=postfix|password=$postfixpassword|" $PANEL_PATH/configs/dovecot2/dovecot-dict-quota.conf
 sed -i "s|password=postfix|password=$postfixpassword|" $PANEL_PATH/configs/dovecot2/dovecot-mysql.conf
 touch /var/log/dovecot.log
@@ -415,7 +416,7 @@ serverhost=`hostname`
 
 # Apache $HTTP_SERVER specific installation tasks...
 if ! grep -q "Include $PANEL_PATH/configs/apache/httpd.conf" /etc/httpd/conf/httpd.conf; then echo "Include $PANEL_PATH/configs/apache/httpd.conf" >> /etc/httpd/conf/httpd.conf; fi
-if ! grep -q "127.0.0.1 "$fqdn /etc/hosts; then echo "127.0.0.1 "$fqdn >> /etc/hosts; fi
+if ! grep -q "127.0.0.1 "$FQDN /etc/hosts; then echo "127.0.0.1 "$FQDN >> /etc/hosts; fi
 if ! grep -q "apache ALL=NOPASSWD: $PANEL_PATH/panel/bin/zsudo" /etc/sudoers; then echo "apache ALL=NOPASSWD: $PANEL_PATH/panel/bin/zsudo" >> /etc/sudoers; fi
 # PANEL_PATH still not here
 sed -i 's|DocumentRoot "/var/www/html"|DocumentRoot "/etc/zpanel/panel"|' /etc/httpd/conf/httpd.conf
