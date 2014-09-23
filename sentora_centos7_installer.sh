@@ -45,6 +45,11 @@ passwordgen() {
            [ "$l" == "" ] && l=16
           tr -dc A-Za-z0-9 < /dev/urandom | head -c ${l} | xargs
 }
+disablerepo() {
+if [ -f "/etc/yum.repos.d/$1.repo" ]; then
+      sed -i 's/enabled=1/enabled=0/g' "/etc/yum.repos.d/$1.repo"
+    fi
+}
 suhosininstall() {
 echo -e "\n# Building suhosin for php5.4"
 git clone https://github.com/stefanesser/suhosin
@@ -110,7 +115,18 @@ read -e -p "Would you like to continue (y/n)? " yn
 	esac
 done
 }
-
+# Cloning Sentora from GitHub
+echo "Downloading Sentora, Please wait, this may take several minutes, the installer will continue after this is complete!"
+getlatestsentora() {
+# Get latest sentora
+git clone https://github.com/sentora/sentora.git
+# Should add latest stable release tag
+cd sentora/
+git checkout $SEN_VERSION
+mkdir ../zp_install_cache/
+git checkout-index -a -f --prefix=../zp_install_cache/
+cd ../zp_install_cache/
+}
 # First we check if the user is 'root' before allowing installation to commence
 if [ $UID -ne 0 ]; then
     echo "Installed failed! To install you must be logged in as 'root', please try again"
@@ -161,13 +177,13 @@ echo "echo \$TZ > /etc/timezone" >> /usr/bin/tzselect
 while true; do
 	echo -e "Find your timezone from : http://php.net/manual/en/timezones.php e.g Europe/London"
 	tzselect
-	tz=$(`cat /etc/timezone`)
+	tz=$(cat /etc/timezone)
 	echo -e "Enter the FQDN you will use to access Sentora on your server."
 	echo -e "- It MUST be a sub-domain of you main domain, it MUST NOT be your main domain only. Example: panel.yourdomain.com"
 	echo -e "- Remember that the sub-domain ('panel' in the example) MUST be setup in your DNS nameserver."
 	read -e -p "FQDN for Sentora: " -i "$fqdn" fqdn
 	read -e -p "Enter the public (external) server IP: " -i "$publicip" publicip
-	read -e -p "Sentora is now ready to install, do you wish to continue (y/n)" yn
+	read -e -p "Sentora is now ready to install, do you wish to continue (y/n)?" yn
 	case $yn in
 		[Yy]* ) break;;
 		[Nn]* ) exit;
@@ -200,47 +216,21 @@ done
       sed -i 's|mirrorlist=http://vzdownload.swsoft.com/download/mirrors/updates-released-ce6|baseurl=http://vzdownload.swsoft.com/ez/packages/centos/6/$basearch/updates/|' "/etc/yum.repos.d/vz.repo"
     fi
 
-    #disable deposits that could result in installation errors
-    #repo ELRepo
-    if [ -f "/etc/yum.repos.d/elrepo.repo" ]; then
-      sed -i 's/enabled=1/enabled=0/g' "/etc/yum.repos.d/elrepo.repo"
-    fi
-
-    #repo Epel Testing
-    if [ -f "/etc/yum.repos.d/epel-testing.repo" ]; then
-      sed -i 's/enabled=1/enabled=0/g' "/etc/yum.repos.d/epel-testing.repo"
-    fi
-
-    #repo Remi
-    if [ -f "/etc/yum.repos.d/remi.repo" ]; then
-      sed -i 's/enabled=1/enabled=0/g' "/etc/yum.repos.d/remi.repo"
-    fi
-
-    #repo RPMForge
-    if [ -f "/etc/yum.repos.d/rpmforge.repo" ]; then
-      sed -i 's/enabled=1/enabled=0/g' "/etc/yum.repos.d/rpmforge.repo"
-    fi
-
-    #repo RPMFusion Free Updates
-    if [ -f "/etc/yum.repos.d/rpmfusion-free-updates.repo" ]; then
-      sed -i 's/enabled=1/enabled=0/g' "/etc/yum.repos.d/rpmfusion-free-updates.repo"
-    fi
-
-    #repo RPMFusion Free Updates Testing
-    if [ -f "/etc/yum.repos.d/rpmfusion-free-updates-testing.repo" ]; then
-      sed -i 's/enabled=1/enabled=0/g' "/etc/yum.repos.d/rpmfusion-free-updates-testing.repo"
-    fi
+#disable deposits that could result in installation errors
+	disablerepo "elrepo"
+	disablerepo "epel-testing"
+	disablerepo "remi"
+	disablerepo "rpmforge"
+	disablerepo "rpmfusion-free-updates"
+	disablerepo "rpmfusion-free-updates-testing"
 
 # We need to disable SELinux...
 sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
 setenforce 0
 
 # Stop conflicting services and iptables to ensure all services will work
-service sendmail stop
-service "$firewallservice" save # replaced iptables with firewallD
-service "$firewallservice" stop
-chkconfig sendmail off
-chkconfig "$firewallservice" off
+service sendmail stop; service "$FIREWALL_SERVICE" save; service "$FIREWALL_SERVICE" stop
+chkconfig sendmail off; chkconfig "$FIREWALL_SERVICE" off
 
 # Start log creation.
 echo -e ""
@@ -255,16 +245,7 @@ $PACKAGE_INSTALLER -y remove bind-chroot qpid-cpp-client
 # Install some standard utility packages required by the installer and/or Sentora.
 $PACKAGE_INSTALLER -y install sudo wget vim make zip unzip git chkconfig
 
-# Cloning Sentora from GitHub
-echo "Downloading Sentora, Please wait, this may take several minutes, the installer will continue after this is complete!"
-# Get latest sentora
-git clone https://github.com/sentora/sentora.git
-# Should add latest stable release tag
-cd sentora/
-git checkout $SEN_VERSION
-mkdir ../zp_install_cache/
-git checkout-index -a -f --prefix=../zp_install_cache/
-cd ../zp_install_cache/
+getlatestsentora;
 
 # We now update the server software packages.
 $PACKAGE_INSTALLER -y update; $PACKAGE_INSTALLER -y upgrade
@@ -334,8 +315,8 @@ mysql -u root -p$password -e "DELETE FROM mysql.user WHERE User=''";
 mysql -u root -p$password -e "DROP DATABASE test";
 mysql -u root -p$password -e "CREATE SCHEMA zpanel_roundcube";
 cat $PANEL_PATH/configs/sentora-install/sql/*.sql | mysql -u root -p$password
-mysql -u root -p$password -e "UPDATE mysql.user SET Password=PASSWORD('$postfixpassword') WHERE User='postfix' AND Host='localhost';";
-mysql -u root -p$password -e "FLUSH PRIVILEGES";
+mysql -u root -p"$password" -e "UPDATE mysql.user SET Password=PASSWORD('$postfixpassword') WHERE User='postfix' AND Host='localhost';";
+mysql -u root -p"$password" -e "FLUSH PRIVILEGES";
 sed -i "/symbolic-links=/a \secure-file-priv=/var/tmp" /etc/my.cnf
 
 # Set some Sentora custom configuration settings (using. setso and setzadmin)
@@ -375,14 +356,13 @@ sed -i "s|password \= postfix|password \= $postfixpassword|" $PANEL_PATH/configs
 mkdir $PANEL_DATA/sieve
 chown -R vmail:mail $PANEL_DATA/sieve
 mkdir -p /var/lib/dovecot/sieve/
-touch /var/lib/dovecot/sieve/default.sieve
+touch /var/lib/dovecot/sieve/default.sieve, /var/log/dovecot.log, /var/log/dovecot-info.log, /var/log/dovecot-debug.log
 ln -s $PANEL_PATH/configs/dovecot2/globalfilter.sieve $PANEL_DATA/sieve/globalfilter.sieve
 rm -rf /etc/dovecot/dovecot.conf
 ln -s $PANEL_PATH/configs/dovecot2/dovecot.conf /etc/dovecot/dovecot.conf
 sed -i "s|postmaster@your-domain.tld|postmaster@$fqdn|" /etc/dovecot/dovecot.conf
 sed -i "s|password=postfix|password=$postfixpassword|" $PANEL_PATH/configs/dovecot2/*.conf
 #sed -i "s|password=postfix|password=$postfixpassword|" $PANEL_PATH/configs/dovecot2/dovecot-mysql.conf
-touch /var/log/dovecot.log, /var/log/dovecot-info.log, /var/log/dovecot-debug.log
 chown vmail:mail /var/log/dovecot*
 chmod 660 /var/log/dovecot*
 
