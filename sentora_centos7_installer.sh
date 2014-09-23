@@ -430,6 +430,12 @@ if ! grep -q "127.0.0.1 "$fqdn /etc/hosts; then echo "127.0.0.1 "$fqdn >> /etc/h
 if ! grep -q "apache ALL=NOPASSWD: $PANEL_PATH/panel/bin/zsudo" /etc/sudoers; then echo "apache ALL=NOPASSWD: $PANEL_PATH/panel/bin/zsudo" >> /etc/sudoers; fi
 # PANEL_PATH still not here
 sed -i 's|DocumentRoot "/var/www/html"|DocumentRoot "/etc/zpanel/panel"|' $HTTP_PATH/conf/httpd.conf
+#remove CGI from hook temporary patch
+# $packageinfo[ 'pk_enablecgi_in' ] =5
+wget https://raw.githubusercontent.com/MBlagui/sentora-core/master/modules/apache_admin/hooks/OnDaemonRun.hook.php
+rm -f $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
+mv OnDaemonRun.hook.php $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
+
 #Centos 7 specific
 if [ $VER = "7" ]; then
   echo "Centos 7 detected updating apache 2.4"
