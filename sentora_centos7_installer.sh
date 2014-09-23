@@ -22,7 +22,7 @@
 INSTALL_BRANCH="dev"
 SEN_VERSION="master"
 SEN_LATEST_RELEASE="1.0.0"
-SEN_REPO="https://github.com/sentora/sentora.git"
+SEN_GIT="https://github.com/sentora/sentora.git"
 PANEL_PATH="/etc/zpanel"
 PANEL_DATA="/var/zpanel"
 DB_SERVER="mariadb"
@@ -36,7 +36,6 @@ PANEL_DAEMON_PATH="$PANEL_PATH/panel/bin/daemon.php"
 PACKAGE_INSTALLER="yum"
 PHP_INI_PATH="/etc"
 PHP_EXT_PATH="/etc/php.d"
-
 
 # ***************************************
 # * Common installer functions          *
@@ -121,9 +120,9 @@ echo "Downloading Sentora, Please wait, this may take several minutes, the insta
 getlatestsentora() {
 # Get sentora DEV / TAG
 if $INSTALL_BRANCH="dev";then
-git clone $SEN_REPO
+git clone $SEN_GIT
 else
-git clone --branch $SEN_LATEST_RELEASE  $SEN_REPO
+git clone --branch $SEN_LATEST_RELEASE  $SEN_GIT
 fi
 # Should add latest stable release tag
 cd sentora/
