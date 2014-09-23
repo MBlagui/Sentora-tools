@@ -370,6 +370,7 @@ touch /root/passwords.txt;
 echo "zadmin Password: $zadminNewPass" >> /root/passwords.txt;
 echo "MySQL Root Password: $password" >> /root/passwords.txt
 echo "MySQL Postfix Password: $postfixpassword" >> /root/passwords.txt
+echo "MySQL ProFTPd Password: $proftppassword" >> /root/passwords.txt
 echo "IP Address: $PUBLIC_IP" >> /root/passwords.txt
 echo "Panel Domain: $FQDN" >> /root/passwords.txt
 
@@ -445,6 +446,7 @@ chown -R $HTTP_USER:$HTTP_USER $PANEL_DATA/temp/
 sed -i "s|KeepAlive Off|KeepAlive On|" /etc/httpd/conf/httpd.conf
 
 # PHP specific installation tasks...
+sed -i "s|date.timezone =|date.timezone = $tz|" /etc/php.ini
 sed -i "s|;date.timezone =|date.timezone = $tz|" /etc/php.ini
 sed -i "s|;upload_tmp_dir =|upload_tmp_dir = $PANEL_DATA/temp/|" /etc/php.ini
 #Disable php signature in headers to hide it from hackers
