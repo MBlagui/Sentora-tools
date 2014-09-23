@@ -382,7 +382,7 @@ ln -s $PANEL_PATH/configs/dovecot2/dovecot.conf /etc/dovecot/dovecot.conf
 sed -i "s|postmaster@your-domain.tld|postmaster@$fqdn|" /etc/dovecot/dovecot.conf
 sed -i "s|password=postfix|password=$postfixpassword|" $PANEL_PATH/configs/dovecot2/*.conf
 #sed -i "s|password=postfix|password=$postfixpassword|" $PANEL_PATH/configs/dovecot2/dovecot-mysql.conf
-touch /var/log/dovecot.log,/var/log/dovecot-info.log,/var/log/dovecot-debug.log
+touch /var/log/dovecot.log, /var/log/dovecot-info.log, /var/log/dovecot-debug.log
 chown vmail:mail /var/log/dovecot*
 chmod 660 /var/log/dovecot*
 
