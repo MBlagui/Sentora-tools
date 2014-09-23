@@ -159,13 +159,13 @@ logfile=$$.log; touch $$.log
 exec > >(tee $logfile)
 exec 2>&1
 
-welcomescreen;
+welcomescreen
 
-if [ "$OS" = "CentOs" ] && [ "$VER" = "7" ]; then
+if [ "$OS" = "CentOs" ] && [ "$VER" = "7" ] ; then 
 echo "Adding epel repos for CentOS 7"
 wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-1.noarch.rpm
-$PACKAGE_INSTALLER -y install epel-release-7-1.noarch.rpm
-if
+$PACKAGE_INSTALLER -y install epel-release-7-1.noarch.rpm;
+fi
 
 # Install package to allow auto selection of php timezone and public ip
 $PACKAGE_INSTALLER -y -q install tzdata wget &>/dev/null
