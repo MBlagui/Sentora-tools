@@ -375,8 +375,6 @@ echo "IP Address: $PUBLIC_IP" >> /root/passwords.txt
 echo "Panel Domain: $FQDN" >> /root/passwords.txt
 
 # Postfix specific installation tasks...
-sed -i "s|;date.timezone =|date.timezone = $tz|" /etc/php.ini
-sed -i "s|;upload_tmp_dir =|upload_tmp_dir = $PANEL_DATA/temp/|" /etc/php.ini
 mkdir $PANEL_DATA/vmail
 chmod -R 770 $PANEL_DATA/vmail
 useradd -r -u 101 -g mail -d $PANEL_DATA/vmail -s /sbin/nologin -c "Virtual mailbox" vmail
@@ -449,7 +447,6 @@ sed -i "s|KeepAlive Off|KeepAlive On|" /etc/httpd/conf/httpd.conf
 sed -i "s|date.timezone =|date.timezone = $tz|" /etc/php.ini
 sed -i "s|;date.timezone =|date.timezone = $tz|" /etc/php.ini
 sed -i "s|;upload_tmp_dir =|upload_tmp_dir = $PANEL_DATA/temp/|" /etc/php.ini
-#Disable php signature in headers to hide it from hackers
 sed -i "s|expose_php = On|expose_php = Off|" /etc/php.ini
 
 # Permissions fix for Apache and ProFTPD (to enable them to play nicely together!)
@@ -472,14 +469,8 @@ cat /etc/rndc.key /etc/rndc.conf | tee named.conf > /dev/null
 # CRON specific installation tasks...
 sudo crontab -l -u $HTTP_USER> /tmp/mycron; echo "*/5 * * * * nice -2 php -q $PANEL_DAEMON_PATH >> $PANEL_PATH/daemon_last_run.log 2>&1" >> /tmp/mycron; sudo crontab -u $HTTP_USER /tmp/mycron; sudo rm -f /tmp/mycron
 
-command="php $INSTALL/indefero/scripts/gitcron.php"
-job="0 0 * * 0 $command"
-cat <(fgrep -i -v "$command" <(crontab -l)) <(echo "$job") | crontab -
-
 # Webalizer specific installation tasks...
 rm -rf /etc/webalizer.conf
-
-
 
 # Roundcube specific installation tasks...
 sed -i "s|YOUR_MYSQL_ROOT_PASSWORD|$password|" $PANEL_PATH/configs/roundcube/db.inc.php
