@@ -301,7 +301,7 @@ $PACKAGE_INSTALLER -y update; $PACKAGE_INSTALLER -y upgrade
 
 # Install required software and dependencies required by Sentora.
 $PACKAGE_INSTALLER -y install ld-linux.so.2 libbz2.so.1 libdb-4.7.so libgd.so.2 bash-completion
-$PACKAGE_INSTALLER -y install curl curl-devel perl-libwww-perl libxml2 libxml2-devel zip bzip2-devel gcc gcc-c++ at make bash-completion
+$PACKAGE_INSTALLER -y install curl curl-devel perl-libwww-perl libxml2 libxml2-devel zip bzip2-devel gcc gcc-c++ at make bash-completion cronie
 $PACKAGE_INSTALLER -y install $HTTP_SERVER $HTTP_SERVER-devel 
 $PACKAGE_INSTALLER -y install php php-devel php-gd php-mbstring php-intl  php-mysql php-xml php-xmlrpc
 $PACKAGE_INSTALLER -y install php-mcrypt php-imap  #Epel packages
