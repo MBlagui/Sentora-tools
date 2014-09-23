@@ -75,8 +75,6 @@ echo "Detected : $OS  $VER  $BITS"
 if [ "$VER" = "7" ]; then
  DB_SERVER="mariadb" &&  echo "DB server will be mariaDB"
  FIREWALL_SERVICE="firewalld"
- wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-1.noarch.rpm
- $PACKAGE_INSTALLER -y install epel-release-7-1.noarch.rpm
  else 
  DB_SERVER="mysql" && echo "DB server will be mySQL"
  DB_DAEMON="mysqld"
@@ -163,7 +161,10 @@ exec 2>&1
 
 
 welcomescreen;
-
+if [ "$VER" = "7" ]; then
+wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-1.noarch.rpm
+$PACKAGE_INSTALLER -y install epel-release-7-1.noarch.rpm
+if
 # Install package to allow auto selection of php timezone and public ip
 $PACKAGE_INSTALLER -y -q install tzdata wget &>/dev/null
 
