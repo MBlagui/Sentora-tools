@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+#
 # Official Sentora Automated Installation Script
 # =============================================
 #
@@ -27,8 +27,8 @@ PANEL_PATH="/etc/zpanel"
 PANEL_DATA="/var/zpanel"
 DB_SERVER="mariadb"
 DB_DAEMON="mariadb"
-HTTP_SERVER="httpd"
 HTTP_PATH="/etc/httpd"
+HTTP_SERVER="httpd"
 FIREWALL_SERVICE="iptables"
 HTTP_USER="apache"
 PHP_BIN_PATH="php"
@@ -36,10 +36,30 @@ PANEL_DAEMON_PATH="$PANEL_PATH/panel/bin/daemon.php"
 PACKAGE_INSTALLER="yum"
 PHP_INI_PATH="/etc"
 PHP_EXT_PATH="/etc/php.d"
+PUBLIC_IP="127.0.0.1"
+FQDN=$(hostname)
+ARCH=$(uname -m)
+EPEL_BASE_URL="http://dl.fedoraproject.org/pub/epel/";
+
+# First we check if the user is 'root' before allowing installation to commence
+if [ $UID -ne 0 ]; then
+    echo "Installed failed! To install you must be logged in as 'root', please try again"
+  exit 1
+fi
 
 # ***************************************
 # * Common installer functions          *
 # ***************************************
+if rpm -q php $HTTP_SERVER $DB_PACKAGE bind postfix dovecot; 
+then
+    echo "You appear to have a server with apache/mysql/bind/postfix already installed; "
+    echo "This installer is designed to install and configure Sentora on a clean OS "
+    echo "installation only!"
+    echo ""
+    echo "Please re-install your OS before attempting to install using this script."
+    exit
+exit 
+fi
 
 # Generates random passwords
 passwordgen() {
@@ -53,42 +73,68 @@ if [ -f "/etc/yum.repos.d/$1.repo" ]; then
     fi
 }
 suhosininstall() {
-echo -e "\n# Building suhosin for php5.4"
-git clone https://github.com/stefanesser/suhosin
-cd suhosin; phpize
-./configure
-make; make install
-cd ..; rm -rf suhosin
-echo 'extension=suhosin.so' > $PHP_EXT_PATH/suhosin.ini
+  echo -e "\n# Building suhosin for php5.4"
+  git clone https://github.com/stefanesser/suhosin
+  cd suhosin; phpize
+  ./configure
+  make; make install
+  cd ..; rm -rf suhosin
+  echo 'extension=suhosin.so' > $PHP_EXT_PATH/suhosin.ini
 }
+
 #Check OS ver and set some custom Variables/paths
 checkos() {
 BITS=$(uname -m | sed 's/x86_//;s/i[3-6]86/32/')
 if [ -f /etc/centos-release ]; then
-  OS="CentOs"
+  OS="CentOS"
   VERFULL=$(cat /etc/centos-release | sed 's/^.*release //;s/ (Fin.*$//')
-  VER=${VERFULL:0:1} # retunr 6 or 7
+  VER=${VERFULL:0:1} # returns 6 or 7
   VERMINOR=${VERFULL:0:3} # return 6.x or 7.x
 else
   OS=$(uname -s)
   VER=$(uname -r);
 fi
+
 echo "Detected : $OS  $VER  $BITS"
+
+## Install required packages for installer to work
+$PACKAGE_INSTALLER -y install sudo wget vim make zip unzip git chkconfig
+
+
+## Setup service names and epel repos depending on version detected
 if [ "$VER" = "7" ]; then
- DB_SERVER="mariadb" &&  echo "DB server will be mariaDB"
- FIREWALL_SERVICE="firewalld"
- else 
- DB_SERVER="mysql" && echo "DB server will be mySQL"
- DB_DAEMON="mysqld"
- FIREWALL_SERVICE="iptables"
+
+  FIREWALL_SERVICE="firewalld"
+  DB_SERVER="mariadb"
+  DB_DAEMON="mariadb"
+
+  ## EPEL Repo Install ##
+  EPEL_FILE=$(wget -q -O- "$EPEL_BASE_URL$VER/$ARCH/e/" | grep -oP '(?<=href=")epel.*(?=">)')
+  wget "$EPEL_BASE_URL$VER/$ARCH/e/$EPEL_FILE"
+  $PACKAGE_INSTALLER -y install epel-release*.rpm
+
+ else
+ 
+  FIREWALL_SERVICE="iptables"  
+  DB_DAEMON="mysqld"
+  DB_SERVER="mysql"
+
+  ## EPEL Repo Install ##
+  EPEL_FILE=$(wget -q -O- "$EPEL_BASE_URL$VER/$ARCH/" | grep -oP '(?<=href=")epel.*(?=">)')
+  wget "$EPEL_BASE_URL$VER/$ARCH/$EPEL_FILE"
+  $PACKAGE_INSTALLER -y install epel-release*.rpm
+
 fi
-if [[ "$OS" = "CentOs" ]] && ( [[ "$VER" = "6" ]] || [[ "$VER" = "7" ]] ) ; then 
-echo "Installing Sentora panel supported os"
+
+#warning the last version of centos and 6.x
+if [[ "$OS" = "CentOS" ]] && ( [[ "$VER" = "6" ]] || [[ "$VER" = "7" ]] ) ; then 
+  echo "Congratulations your operating system is supported by our automated installer. Continuing the installation."
 else
-  echo "Sorry, this installer only supports the installation of Sentora on CentOS 6.x./7.x" 
+  echo "Unfortunatly this installer only supports the installation of Sentora on CentOS 6.x or 7.x." 
   exit 1;
 fi
 }
+
 welcomescreen() {
 # Display the 'welcome' splash/user warning info..
 echo -e "##############################################################"
@@ -115,6 +161,7 @@ read -e -p "Would you like to continue (y/n)? " yn
 	esac
 done
 }
+
 # Cloning Sentora from GitHub
 echo "Downloading Sentora, Please wait, this may take several minutes, the installer will continue after this is complete!"
 getlatestsentora() {
@@ -131,6 +178,7 @@ mkdir ../zp_install_cache/
 git checkout-index -a -f --prefix=../zp_install_cache/
 cd ../zp_install_cache/
 }
+
 # First we check if the user is 'root' before allowing installation to commence
 if [ $UID -ne 0 ]; then
     echo "Installed failed! To install you must be logged in as 'root', please try again"
@@ -165,21 +213,13 @@ logfile=$$.log; touch $$.log
 exec > >(tee $logfile)
 exec 2>&1
 
-welcomescreen
-
-if [ "$OS" = "CentOs" ] && [ "$VER" = "7" ] ; then 
-echo "Adding epel repos for CentOS 7"
-wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-1.noarch.rpm
-$PACKAGE_INSTALLER -y install epel-release-7-1.noarch.rpm;
-fi
+welcomescreen;
 
 # Install package to allow auto selection of php timezone and public ip
 $PACKAGE_INSTALLER -y -q install tzdata wget &>/dev/null
 
 # Set some installation defaults/auto assignments
-fqdn="$(/bin/hostname)"
-publicip="$(wget -qO- http://api.sentora.org/ip.txt)"
-
+PUBLIC_IP=$(wget http://api.sentora.org/ip.txt -q -O -)
 echo "echo \$TZ > /etc/timezone" >> /usr/bin/tzselect
 
 # Installer options
@@ -190,9 +230,9 @@ while true; do
 	echo -e "Enter the FQDN you will use to access Sentora on your server."
 	echo -e "- It MUST be a sub-domain of you main domain, it MUST NOT be your main domain only. Example: panel.yourdomain.com"
 	echo -e "- Remember that the sub-domain ('panel' in the example) MUST be setup in your DNS nameserver."
-	read -e -p "FQDN for Sentora: " -i "$fqdn" fqdn
-	read -e -p "Enter the public (external) server IP: " -i "$publicip" publicip
-	read -e -p "Sentora is now ready to install, do you wish to continue (y/n)?" yn
+	read -e -p "Full qualified domain name for Sentora: " -i "$FQDN" FQDN
+	read -e -p "Enter the public (external) server IP: " -i "$PUBLIC_IP" PUBLIC_IP
+	read -e -p "Sentora is now ready to install, do you wish to continue (y/n)" yn
 	case $yn in
 		[Yy]* ) break;;
 		[Nn]* ) exit;
@@ -248,7 +288,7 @@ uname -a
 echo -e ""
 rpm -qa
 
-# Removal of conflicting packages prior to Sentora installation.
+## Remove known problematic packages
 $PACKAGE_INSTALLER -y remove bind-chroot qpid-cpp-client
 
 # Install some standard utility packages required by the installer and/or Sentora.
@@ -263,12 +303,12 @@ $PACKAGE_INSTALLER -y update; $PACKAGE_INSTALLER -y upgrade
 $PACKAGE_INSTALLER -y install ld-linux.so.2 libbz2.so.1 libdb-4.7.so libgd.so.2 bash-completion
 $PACKAGE_INSTALLER -y install curl curl-devel perl-libwww-perl libxml2 libxml2-devel zip bzip2-devel gcc gcc-c++ at make bash-completion
 $PACKAGE_INSTALLER -y install $HTTP_SERVER $HTTP_SERVER-devel 
-$PACKAGE_INSTALLER -y install php  php-devel php-gd php-mbstring php-intl  php-mysql php-xml php-xmlrpc
+$PACKAGE_INSTALLER -y install php php-devel php-gd php-mbstring php-intl  php-mysql php-xml php-xmlrpc
 $PACKAGE_INSTALLER -y install php-mcrypt php-imap  #Epel packages
 $PACKAGE_INSTALLER -y install postfix postfix-perl-scripts && $PACKAGE_INSTALLER -y install dovecot dovecot-mysql dovecot-pigeonhole 
 $PACKAGE_INSTALLER -y install proftpd proftpd-mysql 
 $PACKAGE_INSTALLER -y install bind bind-utils bind-libs
-$PACKAGE_INSTALLER -y install "$DB_SERVER" "$DB_SERVER-devel"
+$PACKAGE_INSTALLER -y install "$DB_SERVER " "$DB_SERVER-devel"
 $PACKAGE_INSTALLER -y install "$DB_SERVER-server"
 $PACKAGE_INSTALLER -y install webalizer
 
@@ -298,8 +338,9 @@ chown -R $HTTP_USER:$HTTP_USER $PANEL_DATA/hostdata/
 ln -s $PANEL_PATH/panel/bin/zppy /usr/bin/zppy
 ln -s $PANEL_PATH/panel/bin/setso /usr/bin/setso
 ln -s $PANEL_PATH/panel/bin/setzadmin /usr/bin/setzadmin
-chmod +x $PANEL_PATH/panel/bin/zppy $PANEL_PATH/panel/bin/setso
-cp -R $PANEL_PATH/panel/etc/build/config_packs/centos_6/. $PANEL_PATH/configs/
+chmod +x $PANEL_PATH/panel/bin/zppy
+chmod +x $PANEL_PATH/panel/bin/setso
+cp -R $PANEL_PATH/panel/etc/build/config_packs/centos_$VER/. $PANEL_PATH/configs/
 # set password after test connexion
 cc -o $PANEL_PATH/panel/bin/zsudo $PANEL_PATH/configs/bin/zsudo.c
 sudo chown root $PANEL_PATH/panel/bin/zsudo
@@ -330,8 +371,8 @@ sed -i "/symbolic-links=/a \secure-file-priv=/var/tmp" /etc/my.cnf
 
 # Set some Sentora custom configuration settings (using. setso and setzadmin)
 $PANEL_PATH/panel/bin/setzadmin --set "$zadminNewPass";
-$PANEL_PATH/panel/bin/setso --set zpanel_domain $fqdn
-$PANEL_PATH/panel/bin/setso --set server_ip $publicip
+$PANEL_PATH/panel/bin/setso --set zpanel_domain $FQDN
+$PANEL_PATH/panel/bin/setso --set server_ip $PUBLIC_IP
 $PANEL_PATH/panel/bin/setso --set apache_changed "true"
 
 # We'll store the passwords so that users can review them later if required.
@@ -339,12 +380,11 @@ touch /root/passwords.txt;
 echo "zadmin Password: $zadminNewPass" >> /root/passwords.txt;
 echo "MySQL Root Password: $password" >> /root/passwords.txt
 echo "MySQL Postfix Password: $postfixpassword" >> /root/passwords.txt
-echo "IP Address: $publicip" >> /root/passwords.txt
-echo "Panel Domain: $fqdn" >> /root/passwords.txt
+echo "MySQL ProFTPd Password: $proftppassword" >> /root/passwords.txt
+echo "IP Address: $PUBLIC_IP" >> /root/passwords.txt
+echo "Panel Domain: $FQDN" >> /root/passwords.txt
 
 # Postfix specific installation tasks...
-sed -i "s|;date.timezone =|date.timezone = $tz|" /etc/php.ini
-sed -i "s|;upload_tmp_dir =|upload_tmp_dir = $PANEL_DATA/temp/|" /etc/php.ini
 mkdir $PANEL_DATA/vmail && chmod -R 770 $PANEL_DATA/vmail
 useradd -r -u 101 -g mail -d $PANEL_DATA/vmail -s /sbin/nologin -c "Virtual mailbox" vmail
 chown -R vmail:mail $PANEL_DATA/vmail
@@ -392,22 +432,22 @@ if ! grep -q "apache ALL=NOPASSWD: $PANEL_PATH/panel/bin/zsudo" /etc/sudoers; th
 sed -i 's|DocumentRoot "/var/www/html"|DocumentRoot "/etc/zpanel/panel"|' $HTTP_PATH/conf/httpd.conf
 #Centos 7 specific
 if [ $VER = "7" ]; then
-echo "Centos 7 detected updating apache 2.4"
-sed -i 's/Allow from all/ /g' $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
-sed -i 's/Order allow,deny/ /g' $PANEL_PATH/configs/apache/*.conf
-sed -i 's/Allow from all/Require all granted/g' $PANEL_PATH/configs/apache/*.conf
-sed -i 's|Order allow,deny|Require all granted|I'  $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
-sed -i '/Allow from all/d' $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
+  echo "Centos 7 detected updating apache 2.4"
+  sed -i 's/Allow from all/ /g' $PANEL_PATH/modules/apache_admin/hooks/OnDaemonRun.hook.php
+  sed -i 's|Order allow,deny|Require all granted|I'  $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
+  sed -i '/Allow from all/d' $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
 fi
 chown -R $HTTP_USER:$HTTP_USER $PANEL_DATA/temp/
 #Set keepalive on (default is off)
 sed -i "s|KeepAlive Off|KeepAlive On|" $HTTP_PATH/conf/httpd.conf
 
 # PHP specific installation tasks...
-sed -i "s|;date.timezone =|date.timezone = $tz|" $PHP_INI_PATH/php.ini
-sed -i "s|;upload_tmp_dir =|upload_tmp_dir = $PANEL_DATA/temp/|" $PHP_INI_PATH/php.ini
 #Disable php signature in headers to hide it from hackers
 sed -i "s|expose_php = On|expose_php = Off|" $PHP_INI_PATH/php.ini
+sed -i "s|date.timezone =|date.timezone = $tz|" /etc/php.ini
+sed -i "s|;date.timezone =|date.timezone = $tz|" /etc/php.ini
+sed -i "s|;upload_tmp_dir =|upload_tmp_dir = $PANEL_DATA/temp/|" /etc/php.ini
+sed -i "s|expose_php = On|expose_php = Off|" /etc/php.ini
 
 # Permissions fix for Apache and ProFTPD (to enable them to play nicely together!)
 if ! grep -q "umask 002" /etc/sysconfig/httpd; then echo "umask 002" >> /etc/sysconfig/httpd; fi
@@ -453,7 +493,7 @@ service $HTTP_SERVER start
 service postfix restart
 service dovecot start
 service crond start
-service $DB_SERVER restart
+service $DB_DAEMON restart
 service named start
 service proftpd start
 service atd start
