@@ -161,6 +161,7 @@ read -e -p "Would you like to continue (y/n)? " yn
 	esac
 done
 }
+
 # Cloning Sentora from GitHub
 echo "Downloading Sentora, Please wait, this may take several minutes, the installer will continue after this is complete!"
 getlatestsentora() {
@@ -177,6 +178,7 @@ mkdir ../zp_install_cache/
 git checkout-index -a -f --prefix=../zp_install_cache/
 cd ../zp_install_cache/
 }
+
 # First we check if the user is 'root' before allowing installation to commence
 if [ $UID -ne 0 ]; then
     echo "Installed failed! To install you must be logged in as 'root', please try again"
@@ -211,13 +213,7 @@ logfile=$$.log; touch $$.log
 exec > >(tee $logfile)
 exec 2>&1
 
-welcomescreen
-
-if [ "$OS" = "CentOs" ] && [ "$VER" = "7" ] ; then 
-echo "Adding epel repos for CentOS 7"
-wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-1.noarch.rpm
-$PACKAGE_INSTALLER -y install epel-release-7-1.noarch.rpm;
-fi
+welcomescreen;
 
 # Install package to allow auto selection of php timezone and public ip
 $PACKAGE_INSTALLER -y -q install tzdata wget &>/dev/null
