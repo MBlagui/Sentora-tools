@@ -67,11 +67,13 @@ passwordgen() {
            [ "$l" == "" ] && l=16
           tr -dc A-Za-z0-9 < /dev/urandom | head -c ${l} | xargs
 }
+
 disablerepo() {
 if [ -f "/etc/yum.repos.d/$1.repo" ]; then
       sed -i 's/enabled=1/enabled=0/g' "/etc/yum.repos.d/$1.repo"
     fi
 }
+
 suhosininstall() {
   echo -e "\n# Building suhosin for php5.4"
   git clone https://github.com/stefanesser/suhosin
@@ -166,7 +168,7 @@ done
 echo "Downloading Sentora, Please wait, this may take several minutes, the installer will continue after this is complete!"
 getlatestsentora() {
 # Get sentora DEV / TAG
-if $INSTALL_BRANCH="dev";then
+if [ "$INSTALL_BRANCH" == "dev" ]; then
 git clone $SEN_GIT
 else
 git clone --branch $SEN_LATEST_RELEASE  $SEN_GIT
