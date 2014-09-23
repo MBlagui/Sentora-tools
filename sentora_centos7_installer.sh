@@ -19,7 +19,10 @@
 #    OS VERSION: CentOS 6.4+/7.x Minimal
 #    ARCH: 32bit + 64bit
 
+INSTALL_BRANCH="dev"
 SEN_VERSION="master"
+SEN_LATEST_RELEASE="1.0.0"
+SEN_REPO="https://github.com/sentora/sentora.git"
 PANEL_PATH="/etc/zpanel"
 PANEL_DATA="/var/zpanel"
 DB_SERVER="mariadb"
@@ -116,8 +119,12 @@ done
 # Cloning Sentora from GitHub
 echo "Downloading Sentora, Please wait, this may take several minutes, the installer will continue after this is complete!"
 getlatestsentora() {
-# Get latest sentora
-git clone https://github.com/sentora/sentora.git
+# Get sentora DEV / TAG
+if $INSTALL_BRANCH="dev";then
+git clone $SEN_REPO
+else
+git clone --branch $SEN_LATEST_RELEASE 
+fi
 # Should add latest stable release tag
 cd sentora/
 git checkout $SEN_VERSION
