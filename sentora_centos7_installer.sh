@@ -396,8 +396,8 @@ chmod -R 770 /var/spool/vacation
 ln -s $PANEL_PATH/configs/postfix/vacation.pl /var/spool/vacation/vacation.pl
 postmap /etc/postfix/transport
 chown -R vacation:vacation /var/spool/vacation
-if ! grep -q "127.0.0.1 autoreply.$fqdn" /etc/hosts; then echo "127.0.0.1 autoreply.$fqdn" >> /etc/hosts; fi
-sed -i "s|control.yourdomain.com|$fqdn|" $PANEL_PATH/configs/postfix/main.cf
+if ! grep -q "127.0.0.1 autoreply.$FQDN" /etc/hosts; then echo "127.0.0.1 autoreply.$FQDN" >> /etc/hosts; fi
+sed -i "s|control.yourdomain.com|$FQDN|" $PANEL_PATH/configs/postfix/main.cf
 rm -rf /etc/postfix/main.cf /etc/postfix/master.cf
 ln -s $PANEL_PATH/configs/postfix/master.cf /etc/postfix/master.cf
 ln -s $PANEL_PATH/configs/postfix/main.cf /etc/postfix/main.cf
@@ -411,7 +411,7 @@ touch /var/lib/dovecot/sieve/default.sieve, /var/log/dovecot.log, /var/log/dovec
 ln -s $PANEL_PATH/configs/dovecot2/globalfilter.sieve $PANEL_DATA/sieve/globalfilter.sieve
 rm -rf /etc/dovecot/dovecot.conf
 ln -s $PANEL_PATH/configs/dovecot2/dovecot.conf /etc/dovecot/dovecot.conf
-sed -i "s|postmaster@your-domain.tld|postmaster@$fqdn|" /etc/dovecot/dovecot.conf
+sed -i "s|postmaster@your-domain.tld|postmaster@$FQDN|" /etc/dovecot/dovecot.conf
 sed -i "s|password=postfix|password=$postfixpassword|" $PANEL_PATH/configs/dovecot2/*.conf
 #sed -i "s|password=postfix|password=$postfixpassword|" $PANEL_PATH/configs/dovecot2/dovecot-mysql.conf
 chown vmail:mail /var/log/dovecot*
@@ -428,7 +428,7 @@ serverhost=`hostname`
 
 # Apache $HTTP_SERVER specific installation tasks...
 if ! grep -q "Include $PANEL_PATH/configs/apache/httpd.conf" $HTTP_PATH/conf/httpd.conf; then echo "Include $PANEL_PATH/configs/apache/httpd.conf" >> $HTTP_PATH/conf/httpd.conf; fi
-if ! grep -q "127.0.0.1 "$fqdn /etc/hosts; then echo "127.0.0.1 "$fqdn >> /etc/hosts; fi
+if ! grep -q "127.0.0.1 "$FQDN /etc/hosts; then echo "127.0.0.1 "$FQDN >> /etc/hosts; fi
 if ! grep -q "apache ALL=NOPASSWD: $PANEL_PATH/panel/bin/zsudo" /etc/sudoers; then echo "apache ALL=NOPASSWD: $PANEL_PATH/panel/bin/zsudo" >> /etc/sudoers; fi
 # PANEL_PATH still not here
 sed -i 's|DocumentRoot "/var/www/html"|DocumentRoot "/etc/zpanel/panel"|' $HTTP_PATH/conf/httpd.conf
