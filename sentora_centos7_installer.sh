@@ -123,7 +123,7 @@ getlatestsentora() {
 if $INSTALL_BRANCH="dev";then
 git clone $SEN_REPO
 else
-git clone --branch $SEN_LATEST_RELEASE 
+git clone --branch $SEN_LATEST_RELEASE  $SEN_REPO
 fi
 # Should add latest stable release tag
 cd sentora/
