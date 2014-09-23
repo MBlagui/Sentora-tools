@@ -452,8 +452,8 @@ sed -i "s|KeepAlive Off|KeepAlive On|" $HTTP_PATH/conf/httpd.conf
 # PHP specific installation tasks...
 #Disable php signature in headers to hide it from hackers
 sed -i "s|expose_php = On|expose_php = Off|" $PHP_INI_PATH/php.ini
+sed -i "s|;date.timezone =|date.timezone = |" /etc/php.ini
 sed -i "s|date.timezone =|date.timezone = $tz|" /etc/php.ini
-sed -i "s|;date.timezone =|date.timezone = $tz|" /etc/php.ini
 sed -i "s|;upload_tmp_dir =|upload_tmp_dir = $PANEL_DATA/temp/|" /etc/php.ini
 sed -i "s|expose_php = On|expose_php = Off|" /etc/php.ini
 
