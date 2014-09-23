@@ -394,7 +394,7 @@ sed -i 's|DocumentRoot "/var/www/html"|DocumentRoot "/etc/zpanel/panel"|' $HTTP_
 #Centos 7 specific
 if [ $VER = "7" ]; then
 echo "Centos 7 detected updating apache 2.4"
-sed -i 's/Allow from all/ /g' $PANEL_PATH/modules/apache_admin/hooks/OnDaemonRun.hook.php
+sed -i 's/Allow from all/ /g' $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
 sed -i 's/Order allow,deny/ /g' $PANEL_PATH/configs/apache/*.conf
 sed -i 's/Allow from all/Require all granted/g' $PANEL_PATH/configs/apache/*.conf
 sed -i 's|Order allow,deny|Require all granted|I'  $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
