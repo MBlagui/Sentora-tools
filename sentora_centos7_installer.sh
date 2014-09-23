@@ -19,17 +19,13 @@
 #    OS VERSION: CentOS 6.4+/7.x Minimal
 #    ARCH: 32bit + 64bit
 
+## Default configuration variables ##
 SEN_VERSION="master"
 PANEL_PATH="/etc/zpanel"
 PANEL_DATA="/var/zpanel"
 DB_SERVER="mariadb"
 DB_DAEMON="mariadb"
-HTTP_SERVER="httpd"
 HTTP_PATH="/etc/httpd"
-## Default configuration variables ##
-SEN_VERSION="master"
-PANEL_PATH="/etc/zpanel"
-PANEL_DATA="/var/zpanel"
 HTTP_SERVER="httpd"
 FIREWALL_SERVICE="iptables"
 HTTP_USER="apache"
@@ -70,15 +66,17 @@ passwordgen() {
            [ "$l" == "" ] && l=16
           tr -dc A-Za-z0-9 < /dev/urandom | head -c ${l} | xargs
 }
+
 suhosininstall() {
-echo -e "\n# Building suhosin for php5.4"
-git clone https://github.com/stefanesser/suhosin
-cd suhosin; phpize
-./configure
-make; make install
-cd ..; rm -rf suhosin
-echo 'extension=suhosin.so' > $PHP_EXT_PATH/suhosin.ini
+  echo -e "\n# Building suhosin for php5.4"
+  git clone https://github.com/stefanesser/suhosin
+  cd suhosin; phpize
+  ./configure
+  make; make install
+  cd ..; rm -rf suhosin
+  echo 'extension=suhosin.so' > $PHP_EXT_PATH/suhosin.ini
 }
+
 #Check OS ver and set some custom Variables/paths
 checkos() {
 BITS=$(uname -m | sed 's/x86_//;s/i[3-6]86/32/')
@@ -103,7 +101,7 @@ if [ "$VER" = "7" ]; then
 
   FIREWALL_SERVICE="firewalld"
   DB_SERVER="mariadb"
-  DB_PACKAGE="mariadb"
+  DB_DAEMON="mariadb"
 
   ## EPEL Repo Install ##
   EPEL_FILE=$(wget -q -O- "$EPEL_BASE_URL$VER/$ARCH/e/" | grep -oP '(?<=href=")epel.*(?=">)')
@@ -113,8 +111,8 @@ if [ "$VER" = "7" ]; then
  else
  
   FIREWALL_SERVICE="iptables"  
-  DB_SERVER="mysqld"
-  DB_PACKAGE="mysql"
+  DB_DAEMON="mysqld"
+  DB_SERVER="mysql"
 
   ## EPEL Repo Install ##
   EPEL_FILE=$(wget -q -O- "$EPEL_BASE_URL$VER/$ARCH/" | grep -oP '(?<=href=")epel.*(?=">)')
@@ -122,7 +120,6 @@ if [ "$VER" = "7" ]; then
   $PACKAGE_INSTALLER -y install epel-release*.rpm
 
 fi
-
 
 #warning the last version of centos and 6.x
 if [[ "$OS" = "CentOS" ]] && ( [[ "$VER" = "6" ]] || [[ "$VER" = "7" ]] ) ; then 
@@ -132,6 +129,7 @@ else
   exit 1;
 fi
 }
+
 welcomescreen() {
 # Display the 'welcome' splash/user warning info..
 echo -e "##############################################################"
@@ -321,8 +319,8 @@ $PACKAGE_INSTALLER -y install php-mcrypt php-imap  #Epel packages
 $PACKAGE_INSTALLER -y install postfix postfix-perl-scripts && $PACKAGE_INSTALLER -y install dovecot dovecot-mysql dovecot-pigeonhole 
 $PACKAGE_INSTALLER -y install proftpd proftpd-mysql 
 $PACKAGE_INSTALLER -y install bind bind-utils bind-libs
-$PACKAGE_INSTALLER -y install "$DB_PACKAGE" "$DB_PACKAGE-devel"
-$PACKAGE_INSTALLER -y install "$DB_PACKAGE-server"
+$PACKAGE_INSTALLER -y install "$DB_SERVER " "$DB_SERVER-devel"
+$PACKAGE_INSTALLER -y install "$DB_SERVER-server"
 $PACKAGE_INSTALLER -y install webalizer
 
 # Build suhosin for PHP 5.x which is required by Sentora. 
@@ -398,8 +396,6 @@ echo "IP Address: $PUBLIC_IP" >> /root/passwords.txt
 echo "Panel Domain: $FQDN" >> /root/passwords.txt
 
 # Postfix specific installation tasks...
-sed -i "s|;date.timezone =|date.timezone = $tz|" /etc/php.ini
-sed -i "s|;upload_tmp_dir =|upload_tmp_dir = $PANEL_DATA/temp/|" /etc/php.ini
 mkdir $PANEL_DATA/vmail && chmod -R 770 $PANEL_DATA/vmail
 useradd -r -u 101 -g mail -d $PANEL_DATA/vmail -s /sbin/nologin -c "Virtual mailbox" vmail
 chown -R vmail:mail $PANEL_DATA/vmail
@@ -426,7 +422,6 @@ rm -rf /etc/dovecot/dovecot.conf
 ln -s $PANEL_PATH/configs/dovecot2/dovecot.conf /etc/dovecot/dovecot.conf
 sed -i "s|postmaster@your-domain.tld|postmaster@$fqdn|" /etc/dovecot/dovecot.conf
 sed -i "s|password=postfix|password=$postfixpassword|" $PANEL_PATH/configs/dovecot2/*.conf
-#sed -i "s|password=postfix|password=$postfixpassword|" $PANEL_PATH/configs/dovecot2/dovecot-mysql.conf
 touch /var/log/dovecot.log, /var/log/dovecot-info.log, /var/log/dovecot-debug.log
 chown vmail:mail /var/log/dovecot*
 chmod 660 /var/log/dovecot*
@@ -448,24 +443,16 @@ if ! grep -q "apache ALL=NOPASSWD: $PANEL_PATH/panel/bin/zsudo" /etc/sudoers; th
 sed -i 's|DocumentRoot "/var/www/html"|DocumentRoot "/etc/zpanel/panel"|' $HTTP_PATH/conf/httpd.conf
 #Centos 7 specific
 if [ $VER = "7" ]; then
-echo "Centos 7 detected updating apache 2.4"
-sed -i 's/Allow from all/ /g' $PANEL_PATH/modules/apache_admin/hooks/OnDaemonRun.hook.php
-sed -i 's/Order allow,deny/ /g' $PANEL_PATH/configs/apache/*.conf
-sed -i 's/Allow from all/Require all granted/g' $PANEL_PATH/configs/apache/*.conf
-sed -i 's|Order allow,deny|Require all granted|I'  $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
-sed -i '/Allow from all/d' $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
-sed -i 's|Order allow,deny|Require all granted|I'  /etc/zpanel/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
-sed -i 's/Allow from all/ /g' /etc/zpanel/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
-sed -i 's|Order allow,deny|Require all granted|I'  /etc/zpanel/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
-sed -i '/Allow from all/d' /etc/zpanel/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
+  echo "Centos 7 detected updating apache 2.4"
+  sed -i 's/Allow from all/ /g' $PANEL_PATH/modules/apache_admin/hooks/OnDaemonRun.hook.php
+  sed -i 's|Order allow,deny|Require all granted|I'  $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
+  sed -i '/Allow from all/d' $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
 fi
 chown -R $HTTP_USER:$HTTP_USER $PANEL_DATA/temp/
 #Set keepalive on (default is off)
 sed -i "s|KeepAlive Off|KeepAlive On|" $HTTP_PATH/conf/httpd.conf
 
 # PHP specific installation tasks...
-sed -i "s|;date.timezone =|date.timezone = $tz|" $PHP_INI_PATH/php.ini
-sed -i "s|;upload_tmp_dir =|upload_tmp_dir = $PANEL_DATA/temp/|" $PHP_INI_PATH/php.ini
 #Disable php signature in headers to hide it from hackers
 sed -i "s|expose_php = On|expose_php = Off|" $PHP_INI_PATH/php.ini
 sed -i "s|date.timezone =|date.timezone = $tz|" /etc/php.ini
@@ -517,7 +504,7 @@ service $HTTP_SERVER start
 service postfix restart
 service dovecot start
 service crond start
-service $DB_SERVER restart
+service $DB_DAEMON restart
 service named start
 service proftpd start
 service atd start
