@@ -471,7 +471,11 @@ cat /etc/rndc.key /etc/named.conf | tee named.conf > /dev/null
 cat /etc/rndc.key /etc/rndc.conf | tee named.conf > /dev/null
 
 # CRON specific installation tasks...
-sudo crontab -u $HTTP_USER $PANEL_PATH/configs/cron/zdaemon;
+crontab -u $HTTP_USER $PANEL_PATH/configs/cron/zdaemon;
+chmod 744 /var/spool/cron
+chmod 644 /var/spool/cron/apache
+chmod -R 644 /etc/cron.d/
+chown -R apache:apache /var/spool/cron/
 
 # Webalizer specific installation tasks...
 rm -rf /etc/webalizer.conf
