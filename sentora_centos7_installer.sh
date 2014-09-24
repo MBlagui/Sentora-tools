@@ -67,11 +67,13 @@ passwordgen() {
            [ "$l" == "" ] && l=16
           tr -dc A-Za-z0-9 < /dev/urandom | head -c ${l} | xargs
 }
+
 disablerepo() {
 if [ -f "/etc/yum.repos.d/$1.repo" ]; then
       sed -i 's/enabled=1/enabled=0/g' "/etc/yum.repos.d/$1.repo"
     fi
 }
+
 suhosininstall() {
   echo -e "\n# Building suhosin for php5.4"
   git clone https://github.com/stefanesser/suhosin
@@ -166,7 +168,7 @@ done
 echo "Downloading Sentora, Please wait, this may take several minutes, the installer will continue after this is complete!"
 getlatestsentora() {
 # Get sentora DEV / TAG
-if $INSTALL_BRANCH="dev";then
+if [ "$INSTALL_BRANCH" == "dev" ]; then
 git clone $SEN_GIT
 else
 git clone --branch $SEN_LATEST_RELEASE  $SEN_GIT
@@ -394,8 +396,8 @@ chmod -R 770 /var/spool/vacation
 ln -s $PANEL_PATH/configs/postfix/vacation.pl /var/spool/vacation/vacation.pl
 postmap /etc/postfix/transport
 chown -R vacation:vacation /var/spool/vacation
-if ! grep -q "127.0.0.1 autoreply.$fqdn" /etc/hosts; then echo "127.0.0.1 autoreply.$fqdn" >> /etc/hosts; fi
-sed -i "s|control.yourdomain.com|$fqdn|" $PANEL_PATH/configs/postfix/main.cf
+if ! grep -q "127.0.0.1 autoreply.$FQDN" /etc/hosts; then echo "127.0.0.1 autoreply.$FQDN" >> /etc/hosts; fi
+sed -i "s|control.yourdomain.com|$FQDN|" $PANEL_PATH/configs/postfix/main.cf
 rm -rf /etc/postfix/main.cf /etc/postfix/master.cf
 ln -s $PANEL_PATH/configs/postfix/master.cf /etc/postfix/master.cf
 ln -s $PANEL_PATH/configs/postfix/main.cf /etc/postfix/main.cf
@@ -409,7 +411,7 @@ touch /var/lib/dovecot/sieve/default.sieve, /var/log/dovecot.log, /var/log/dovec
 ln -s $PANEL_PATH/configs/dovecot2/globalfilter.sieve $PANEL_DATA/sieve/globalfilter.sieve
 rm -rf /etc/dovecot/dovecot.conf
 ln -s $PANEL_PATH/configs/dovecot2/dovecot.conf /etc/dovecot/dovecot.conf
-sed -i "s|postmaster@your-domain.tld|postmaster@$fqdn|" /etc/dovecot/dovecot.conf
+sed -i "s|postmaster@your-domain.tld|postmaster@$FQDN|" /etc/dovecot/dovecot.conf
 sed -i "s|password=postfix|password=$postfixpassword|" $PANEL_PATH/configs/dovecot2/*.conf
 #sed -i "s|password=postfix|password=$postfixpassword|" $PANEL_PATH/configs/dovecot2/dovecot-mysql.conf
 chown vmail:mail /var/log/dovecot*
@@ -426,15 +428,10 @@ serverhost=`hostname`
 
 # Apache $HTTP_SERVER specific installation tasks...
 if ! grep -q "Include $PANEL_PATH/configs/apache/httpd.conf" $HTTP_PATH/conf/httpd.conf; then echo "Include $PANEL_PATH/configs/apache/httpd.conf" >> $HTTP_PATH/conf/httpd.conf; fi
-if ! grep -q "127.0.0.1 "$fqdn /etc/hosts; then echo "127.0.0.1 "$fqdn >> /etc/hosts; fi
+if ! grep -q "127.0.0.1 "$FQDN /etc/hosts; then echo "127.0.0.1 "$FQDN >> /etc/hosts; fi
 if ! grep -q "apache ALL=NOPASSWD: $PANEL_PATH/panel/bin/zsudo" /etc/sudoers; then echo "apache ALL=NOPASSWD: $PANEL_PATH/panel/bin/zsudo" >> /etc/sudoers; fi
 # PANEL_PATH still not here
 sed -i 's|DocumentRoot "/var/www/html"|DocumentRoot "/etc/zpanel/panel"|' $HTTP_PATH/conf/httpd.conf
-#remove CGI from hook temporary patch
-# $packageinfo[ 'pk_enablecgi_in' ] =5
-wget https://raw.githubusercontent.com/MBlagui/sentora-core/master/modules/apache_admin/hooks/OnDaemonRun.hook.php
-rm -f $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
-mv OnDaemonRun.hook.php $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
 
 #Centos 7 specific
 if [ $VER = "7" ]; then
@@ -443,6 +440,7 @@ if [ $VER = "7" ]; then
   sed -i 's|Order allow,deny|Require all granted|I'  $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
   sed -i '/Allow from all/d' $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
 fi
+
 chown -R $HTTP_USER:$HTTP_USER $PANEL_DATA/temp/
 #Set keepalive on (default is off)
 sed -i "s|KeepAlive Off|KeepAlive On|" $HTTP_PATH/conf/httpd.conf
@@ -450,8 +448,8 @@ sed -i "s|KeepAlive Off|KeepAlive On|" $HTTP_PATH/conf/httpd.conf
 # PHP specific installation tasks...
 #Disable php signature in headers to hide it from hackers
 sed -i "s|expose_php = On|expose_php = Off|" $PHP_INI_PATH/php.ini
+sed -i "s|;date.timezone =|date.timezone = |" /etc/php.ini
 sed -i "s|date.timezone =|date.timezone = $tz|" /etc/php.ini
-sed -i "s|;date.timezone =|date.timezone = $tz|" /etc/php.ini
 sed -i "s|;upload_tmp_dir =|upload_tmp_dir = $PANEL_DATA/temp/|" /etc/php.ini
 sed -i "s|expose_php = On|expose_php = Off|" /etc/php.ini
 
@@ -473,7 +471,11 @@ cat /etc/rndc.key /etc/named.conf | tee named.conf > /dev/null
 cat /etc/rndc.key /etc/rndc.conf | tee named.conf > /dev/null
 
 # CRON specific installation tasks...
-sudo crontab -l -u $HTTP_USER> /tmp/mycron; echo "*/5 * * * * nice -2 php -q $PANEL_DAEMON_PATH >> $PANEL_PATH/daemon_last_run.log 2>&1" >> /tmp/mycron; sudo crontab -u $HTTP_USER /tmp/mycron; sudo rm -f /tmp/mycron
+crontab -u $HTTP_USER $PANEL_PATH/configs/cron/zdaemon;
+chmod 744 /var/spool/cron
+chmod 644 /var/spool/cron/apache
+chmod -R 644 /etc/cron.d/
+chown -R apache:apache /var/spool/cron/
 
 # Webalizer specific installation tasks...
 rm -rf /etc/webalizer.conf
