@@ -432,11 +432,6 @@ if ! grep -q "127.0.0.1 "$FQDN /etc/hosts; then echo "127.0.0.1 "$FQDN >> /etc/h
 if ! grep -q "apache ALL=NOPASSWD: $PANEL_PATH/panel/bin/zsudo" /etc/sudoers; then echo "apache ALL=NOPASSWD: $PANEL_PATH/panel/bin/zsudo" >> /etc/sudoers; fi
 # PANEL_PATH still not here
 sed -i 's|DocumentRoot "/var/www/html"|DocumentRoot "/etc/zpanel/panel"|' $HTTP_PATH/conf/httpd.conf
-#remove CGI from hook temporary patch
-# $packageinfo[ 'pk_enablecgi_in' ] =5
-wget https://raw.githubusercontent.com/MBlagui/sentora-core/master/modules/apache_admin/hooks/OnDaemonRun.hook.php
-rm -f $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
-mv OnDaemonRun.hook.php $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
 
 #Centos 7 specific
 if [ $VER = "7" ]; then
@@ -445,6 +440,7 @@ if [ $VER = "7" ]; then
   sed -i 's|Order allow,deny|Require all granted|I'  $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
   sed -i '/Allow from all/d' $PANEL_PATH/panel/modules/apache_admin/hooks/OnDaemonRun.hook.php
 fi
+
 chown -R $HTTP_USER:$HTTP_USER $PANEL_DATA/temp/
 #Set keepalive on (default is off)
 sed -i "s|KeepAlive Off|KeepAlive On|" $HTTP_PATH/conf/httpd.conf
