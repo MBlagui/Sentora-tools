@@ -471,7 +471,7 @@ cat /etc/rndc.key /etc/named.conf | tee named.conf > /dev/null
 cat /etc/rndc.key /etc/rndc.conf | tee named.conf > /dev/null
 
 # CRON specific installation tasks...
-sudo crontab -l -u $HTTP_USER> /tmp/mycron; echo "*/5 * * * * nice -2 php -q $PANEL_DAEMON_PATH >> $PANEL_PATH/daemon_last_run.log 2>&1" >> /tmp/mycron; sudo crontab -u $HTTP_USER /tmp/mycron; sudo rm -f /tmp/mycron
+sudo crontab -u $HTTP_USER $PANEL_PATH/configs/cron/zdaemon;
 
 # Webalizer specific installation tasks...
 rm -rf /etc/webalizer.conf
