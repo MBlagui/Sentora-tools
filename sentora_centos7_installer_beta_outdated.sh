@@ -19,6 +19,8 @@
 #    OS VERSION: CentOS 6.4+/7.x Minimal
 #    ARCH: 32bit + 64bit
 
+# THIS IS BETA INSTALLER, we don't support it as we unified installers.
+
 INSTALL_BRANCH="dev"
 SEN_VERSION="master"
 SEN_LATEST_RELEASE="1.0.0"
