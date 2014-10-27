@@ -11,3 +11,7 @@ mirrorlist=http://download.webmin.com/download/yum/mirrorlist
 enabled=1
 EOF
 yum install webmin -y
+# Enable webmin autostart & start it
+chkconfig on
+service webmin start
+# Webmin now on http://ip:10000
